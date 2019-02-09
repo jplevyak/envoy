@@ -73,7 +73,7 @@ public:
   virtual Http::FilterDataStatus onRequestBody(int body_buffer_length, bool end_of_stream);
   virtual Http::FilterTrailersStatus onRequestTrailers();
   virtual Http::FilterMetadataStatus onRequestMetadata();
-  // HTTP Filter STream Response Donwcalls.
+  // HTTP Filter Stream Response Downcalls.
   virtual Http::FilterHeadersStatus onResponseHeaders();
   virtual Http::FilterDataStatus onResponseBody(int body_buffer_length, bool end_of_stream);
   virtual Http::FilterTrailersStatus onResponseTrailers();
