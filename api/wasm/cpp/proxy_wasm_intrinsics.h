@@ -134,6 +134,19 @@ extern "C" uint32_t proxy_httpCall(const char* uri_ptr, size_t uri_size, void* h
                                    void* trailer_pairs_ptr, size_t trailer_pairs_size,
                                    uint32_t timeout_milliseconds);
 
+// Metrics
+
+enum class MetricType : uint32_t {
+  Counter = 0,
+  Gauge = 1,
+  Histogram = 2,
+};
+// Returns a metric_id which can be used to report a metric. On error returns 0.
+extern "C" uint32_t proxy_defineMetric(MetricType type, const char* name_ptr, size_t name_size);
+extern "C" void proxy_incrementMetric(uint32_t metric_id, int64_t offset);
+extern "C" void proxy_recordMetric(uint32_t metric_id, uint64_t value);
+extern "C" uint64_t proxy_getMetric(uint32_t metric_id);
+
 //
 // High Level C++ API.
 //
@@ -479,3 +492,17 @@ inline uint32_t httpCall(std::string_view uri, const HeaderStringPairs& request_
   ::free(trailers_ptr);
   return result;
 }
+
+inline uint32_t defineMetric(MetricType type, std::string_view name) {
+  return proxy_defineMetric(type, name.data(), name.size());
+}
+
+inline void incrementMetric(uint32_t metric_id, int64_t offset) {
+  proxy_incrementMetric(metric_id, offset);
+}
+
+inline void recordMetric(uint32_t metric_id, uint64_t value) {
+  proxy_recordMetric(metric_id, value);
+}
+
+inline uint64_t getMetric(uint32_t metric_id) { return proxy_getMetric(metric_id); }

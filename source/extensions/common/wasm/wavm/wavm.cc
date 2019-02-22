@@ -411,6 +411,15 @@ template void registerCallbackWavm<U32, void*, U32, U32, U32, U32, U32, U32, U32
     WasmVm* vm, absl::string_view functionName,
     U32 (*f)(void*, U32, U32, U32, U32, U32, U32, U32, U32, U32, U32));
 
+template void registerCallbackWavm<U64, void*, U32>(WasmVm* vm, absl::string_view functionName,
+                                                    U64 (*f)(void*, U32));
+template void registerCallbackWavm<void, void*, U32, I64>(WasmVm* vm,
+                                                          absl::string_view functionName,
+                                                          void (*f)(void*, U32, I64));
+template void registerCallbackWavm<void, void*, U32, U64>(WasmVm* vm,
+                                                          absl::string_view functionName,
+                                                          void (*f)(void*, U32, U64));
+
 template <typename R, typename... Args>
 IR::FunctionType
 inferStdFunctionType(std::function<R(Envoy::Extensions::Common::Wasm::Context*, Args...)>*) {

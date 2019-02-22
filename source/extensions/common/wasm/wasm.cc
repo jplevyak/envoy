@@ -438,6 +438,30 @@ uint32_t httpCallHandler(void* raw_context, uint32_t uri_ptr, uint32_t uri_size,
   return context->httpCall(uri, headers, body, trailers, timeout_milliseconds);
 }
 
+uint32_t defineMetricHandler(void* raw_context, uint32_t metric_type, uint32_t name_ptr,
+                             uint32_t name_size) {
+  if (metric_type > static_cast<uint32_t>(Context::MetricType::Max))
+    return 0;
+  auto context = WASM_CONTEXT(raw_context);
+  auto name = context->wasmVm()->getMemory(name_ptr, name_size);
+  return context->defineMetric(static_cast<Context::MetricType>(metric_type), name);
+}
+
+void incrementMetricHandler(void* raw_context, uint32_t metric_id, int64_t offset) {
+  auto context = WASM_CONTEXT(raw_context);
+  context->incrementMetric(metric_id, offset);
+}
+
+void recordMetricHandler(void* raw_context, uint32_t metric_id, uint64_t value) {
+  auto context = WASM_CONTEXT(raw_context);
+  context->recordMetric(metric_id, value);
+}
+
+uint64_t getMetricHandler(void* raw_context, uint32_t metric_id) {
+  auto context = WASM_CONTEXT(raw_context);
+  return context->getMetric(metric_id);
+}
+
 uint32_t getTotalMemoryHandler(void*) { return 0x7FFFFFFF; }
 uint32_t _emscripten_get_heap_sizeHandler(void*) { return 0x7FFFFFFF; }
 void _llvm_trapHandler(void*) { throw WasmException("emscripten llvm_trap"); }
@@ -928,10 +952,96 @@ void Context::onHttpCallResponse(uint32_t token, const Pairs& response_headers,
                              trailers_ptr, trailers_size);
 }
 
+uint32_t Context::defineMetric(MetricType type, absl::string_view name) {
+  switch (type) {
+  case MetricType::Counter: {
+    auto id = wasm_->nextCounterMetricId();
+    wasm_->counters_.emplace(id, &wasm_->scope_.counter(std::string(
+                                     name))); // This is inefficient, but it is the Scope API.
+    return id;
+  }
+  case MetricType::Gauge: {
+    auto id = wasm_->nextGaugeMetricId();
+    wasm_->gauges_.emplace(id, &wasm_->scope_.gauge(std::string(
+                                   name))); // This is inefficient, but it is the Scope API.
+    return id;
+  }
+  case MetricType::Histogram: {
+    auto id = wasm_->nextHistogramMetricId();
+    wasm_->histograms_.emplace(id, &wasm_->scope_.histogram(std::string(
+                                       name))); // This is inefficient, but it is the Scope API.
+    return id;
+  }
+  }
+  return 0;
+}
+
+void Context::incrementMetric(uint32_t metric_id, int64_t offset) {
+  auto type = static_cast<MetricType>(metric_id & Wasm::kMetricTypeMask);
+  if (type == MetricType::Counter) {
+    auto it = wasm_->counters_.find(metric_id);
+    if (it != wasm_->counters_.end()) {
+      if (offset > 0)
+        it->second->add(offset);
+    }
+  } else if (type == MetricType::Gauge) {
+    auto it = wasm_->gauges_.find(metric_id);
+    if (it != wasm_->gauges_.end()) {
+      if (offset > 0)
+        it->second->add(offset);
+      else
+        it->second->sub(-offset);
+    }
+  }
+}
+
+void Context::recordMetric(uint32_t metric_id, uint64_t value) {
+  switch (static_cast<MetricType>(metric_id & Wasm::kMetricTypeMask)) {
+  case MetricType::Counter: {
+    auto it = wasm_->counters_.find(metric_id);
+    if (it != wasm_->counters_.end()) {
+      it->second->add(value);
+    }
+    break;
+  }
+  case MetricType::Gauge: {
+    auto it = wasm_->gauges_.find(metric_id);
+    if (it != wasm_->gauges_.end()) {
+      it->second->set(value);
+    }
+    break;
+  }
+  case MetricType::Histogram: {
+    auto it = wasm_->histograms_.find(metric_id);
+    if (it != wasm_->histograms_.end()) {
+      it->second->recordValue(value);
+    }
+    break;
+  }
+  }
+}
+
+uint64_t Context::getMetric(uint32_t metric_id) {
+  auto type = static_cast<MetricType>(metric_id & Wasm::kMetricTypeMask);
+  if (type == MetricType::Counter) {
+    auto it = wasm_->counters_.find(metric_id);
+    if (it != wasm_->counters_.end()) {
+      return it->second->value();
+    }
+  } else if (type == MetricType::Gauge) {
+    auto it = wasm_->gauges_.find(metric_id);
+    if (it != wasm_->gauges_.end()) {
+      return it->second->value();
+    }
+  }
+  return 0;
+}
+
 Wasm::Wasm(absl::string_view vm, absl::string_view id, absl::string_view initial_configuration,
-           Upstream::ClusterManager& cluster_manager, Event::Dispatcher& dispatcher)
-    : cluster_manager_(cluster_manager), dispatcher_(dispatcher),
-      initial_configuration_(initial_configuration) {
+           Upstream::ClusterManager& cluster_manager, Event::Dispatcher& dispatcher,
+           Stats::Scope& scope, Stats::ScopeSharedPtr owned_scope)
+    : cluster_manager_(cluster_manager), dispatcher_(dispatcher), scope_(scope),
+      owned_scope_(owned_scope), initial_configuration_(initial_configuration) {
   wasm_vm_ = Common::Wasm::createWasmVm(vm);
   id_ = std::string(id);
   if (wasm_vm_) {
@@ -992,6 +1102,11 @@ Wasm::Wasm(absl::string_view vm, absl::string_view id, absl::string_view initial
     _REGISTER_PROXY(httpCall);
 
     _REGISTER_PROXY(setTickPeriodMilliseconds);
+
+    _REGISTER_PROXY(defineMetric);
+    _REGISTER_PROXY(incrementMetric);
+    _REGISTER_PROXY(recordMetric);
+    _REGISTER_PROXY(getMetric);
 #undef _REGISTER_PROXY
   }
 }
@@ -1020,7 +1135,7 @@ void Wasm::getFunctions() {
 
 Wasm::Wasm(const Wasm& wasm)
     : std::enable_shared_from_this<Wasm>(), cluster_manager_(wasm.cluster_manager_),
-      dispatcher_(wasm.dispatcher_) {
+      dispatcher_(wasm.dispatcher_), scope_(wasm.scope_), owned_scope_(wasm.owned_scope_) {
   wasm_vm_ = wasm.wasmVm()->clone();
   general_context_ = createContext();
   getFunctions();
@@ -1224,9 +1339,10 @@ std::unique_ptr<WasmVm> createWasmVm(absl::string_view wasm_vm) {
 std::shared_ptr<Wasm> createWasm(absl::string_view id,
                                  const envoy::config::wasm::v2::VmConfig& vm_config,
                                  Upstream::ClusterManager& cluster_manager,
-                                 Event::Dispatcher& dispatcher, Api::Api& api) {
+                                 Event::Dispatcher& dispatcher, Api::Api& api, Stats::Scope& scope,
+                                 Stats::ScopeSharedPtr scope_ptr) {
   auto wasm = std::make_shared<Wasm>(vm_config.vm(), id, vm_config.initial_configuration(),
-                                     cluster_manager, dispatcher);
+                                     cluster_manager, dispatcher, scope, scope_ptr);
   const auto& code = Config::DataSource::read(vm_config.code(), true, api);
   const auto& path = Config::DataSource::getPath(vm_config.code())
                          .value_or(code.empty() ? EMPTY_STRING : INLINE_STRING);
@@ -1248,7 +1364,7 @@ std::shared_ptr<Wasm> createThreadLocalWasm(Wasm& base_wasm, absl::string_view c
   } else {
     wasm = std::make_shared<Wasm>(base_wasm.wasmVm()->vm(), base_wasm.id(),
                                   base_wasm.initial_configuration(), base_wasm.clusterManager(),
-                                  dispatcher);
+                                  dispatcher, base_wasm.scope());
     if (!wasm->initialize(base_wasm.code(), base_wasm.id(), base_wasm.allow_precompiled())) {
       throw WasmException("Failed to initialize WASM code");
     }
