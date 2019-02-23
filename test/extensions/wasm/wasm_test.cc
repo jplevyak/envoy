@@ -114,6 +114,24 @@ TEST(WasmTest, DivByZero) {
                          "wavm.integerDivideByZeroOrOverflow.*");
 }
 
+TEST(WasmTest, OOM) {
+  Stats::IsolatedStoreImpl stats_store;
+  Api::ApiPtr api = Api::createApiForTest(stats_store);
+  Upstream::MockClusterManager cluster_manager;
+  Event::SimulatedTimeSystem time_system;
+  Event::DispatcherImpl dispatcher(time_system, *api);
+  auto wasm = std::make_unique<Extensions::Common::Wasm::Wasm>("envoy.wasm.vm.wavm", "", "",
+                                                               cluster_manager, dispatcher);
+  EXPECT_NE(wasm, nullptr);
+  const auto code = TestEnvironment::readFileToStringForTest(TestEnvironment::substitute(
+      "{{ test_rundir }}/test/extensions/wasm/test_data/memory.wasm"));
+  EXPECT_FALSE(code.empty());
+  auto context = std::make_unique<TestContext>(wasm.get());
+  EXPECT_TRUE(wasm->initialize(code, "<test>", false));
+  wasm->setGeneralContext(std::move(context));
+  wasm->start();
+}
+
 } // namespace Wasm
 } // namespace Extensions
 } // namespace Envoy

@@ -442,6 +442,39 @@ uint32_t getTotalMemoryHandler(void*) { return 0x7FFFFFFF; }
 uint32_t _emscripten_get_heap_sizeHandler(void*) { return 0x7FFFFFFF; }
 void _llvm_trapHandler(void*) { throw WasmException("emscripten llvm_trap"); }
 
+
+void abortHandler(void*, uint32_t code) {
+  throw WasmException(fmt::format("emscripten abort code = {}", code));
+}
+
+void _abortHandler(void*) {
+  throw WasmException("emscripten abort");
+}
+
+uint32_t abortOnCannotGrowMemoryHandler(void*) {
+  throw WasmException("emscripten abortOnCannotGrowMemory");
+}
+
+void ___setErrNoHandler(void*, uint32_t value) {
+  throw WasmException(fmt::format("emscripten __setErrNo value = {}", value));
+}
+
+uint32_t _emscripten_memcpy_bigHandler(void* raw_context, uint32_t source, uint32_t dest, uint32_t size) {
+  auto context = WASM_CONTEXT(raw_context);
+  auto m = context->wasmVm()->getMemory(source, size);
+  if (m.size() != size) {
+    throw WasmException("_emscripten_memcpy_big bad source");
+  }
+  if (!context->wasmVm()->setMemory(dest, size, m.data())) {
+    throw WasmException("_emscripten_memcpy_big bad dest");
+  }
+  return size;
+}
+
+uint32_t _emscripten_resize_heapHandler(void*, uint32_t size) {
+  throw WasmException(fmt::format("emscripten _emscripten_resize_heap size = {}", size));
+}
+
 void setTickPeriodMillisecondsHandler(void* raw_context, uint32_t tick_period_milliseconds) {
   WASM_CONTEXT(raw_context)->setTickPeriod(std::chrono::milliseconds(tick_period_milliseconds));
 }
@@ -940,6 +973,12 @@ Wasm::Wasm(absl::string_view vm, absl::string_view id, absl::string_view initial
     _REGISTER(getTotalMemory);
     _REGISTER(_emscripten_get_heap_size);
     _REGISTER(_llvm_trap);
+    _REGISTER(abortOnCannotGrowMemory);
+    _REGISTER(abort);
+    _REGISTER(_abort);
+    _REGISTER(___setErrNo);
+    _REGISTER(_emscripten_memcpy_big);
+    _REGISTER(_emscripten_resize_heap);
 #undef _REGISTER
 
     // Calls with the "_proxy_" prefix.

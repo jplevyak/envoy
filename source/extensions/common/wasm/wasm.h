@@ -379,7 +379,7 @@ public:
   // Convert a block of memory in the VM to a string_view.
   virtual absl::string_view getMemory(uint32_t pointer, uint32_t size) PURE;
   // Set a block of memory in the VM, returns true on success, false if the pointer/size is invalid.
-  virtual bool setMemory(uint32_t pointer, uint32_t size, void* data) PURE;
+  virtual bool setMemory(uint32_t pointer, uint32_t size, const void* data) PURE;
 
   // Convenience functions.
 

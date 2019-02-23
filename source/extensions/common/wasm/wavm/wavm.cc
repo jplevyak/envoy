@@ -57,6 +57,8 @@ extern thread_local Envoy::Extensions::Common::Wasm::Context* current_context_;
 namespace Wavm {
 namespace {
 
+constexpr minStaticEmscriptenMemoryPages = 128;
+
 using Context = Common::Wasm::Context; // Shadowing WAVM::Runtime::Context.
 
 const Logger::Id wasmId = Logger::Id::wasm;
@@ -188,7 +190,7 @@ public:
   void start(Context* context) override;
   void* allocMemory(uint32_t size, uint32_t* pointer) override;
   absl::string_view getMemory(uint32_t pointer, uint32_t size) override;
-  bool setMemory(uint32_t pointer, uint32_t size, void* data) override;
+  bool setMemory(uint32_t pointer, uint32_t size, const void* data) override;
 
   WAVM::Runtime::Memory* memory() { return memory_; }
   WAVM::Runtime::Context* context() { return context_; }
@@ -275,14 +277,26 @@ bool Wavm::initialize(const std::string& code, absl::string_view name, bool allo
     }
   }
   if (needs_emscripten) {
+#if 0
+    rootResolver.moduleNameToInstanceMap().set("env", envoyModuleInstance_);
+    TableType tableType(WAVM::IR::ReferenceType::funcref, false, SizeConstraints{minStaticEmscriptenMemoryPages, 0});
+    Table* table = WAVM::Runtime::createTable(compartment_, tableType, "env.table");
+    MemoryType memoryType(false, SizeConstraints{MIN_EMSCRIPTEN_MEMORY_PAGES, 0});
+    Memory* memory = WAVM::Runtime::createMemory(compartment, memoryType, "env.memory");
+    HashMap<std::string, Runtime::Object*> extraEnvExports = {
+      {"memory", WAVM::Runtime::asObject(memory)},
+      {"table", WAVM::Runtime::asObject(table)},
+    };
+#else
     emscriptenInstance_ = Emscripten::instantiate(compartment_, irModule_);
     rootResolver.moduleNameToInstanceMap().set("env", emscriptenInstance_->env);
     rootResolver.moduleNameToInstanceMap().set("asm2wasm", emscriptenInstance_->asm2wasm);
     rootResolver.moduleNameToInstanceMap().set("global", emscriptenInstance_->global);
+#endif
   }
   WAVM::Runtime::LinkResult linkResult = linkModule(irModule_, rootResolver);
   moduleInstance_ = instantiateModule(compartment_, module, std::move(linkResult.resolvedImports),
-                                      std::string(name));
+                                      std::string(name), extraEnvExports);
   memory_ = getDefaultMemory(moduleInstance_);
   return true;
 }
@@ -323,7 +337,7 @@ absl::string_view Wavm::getMemory(uint32_t pointer, uint32_t size) {
           static_cast<size_t>(size)};
 }
 
-bool Wavm::setMemory(uint32_t pointer, uint32_t size, void* data) {
+bool Wavm::setMemory(uint32_t pointer, uint32_t size, const void* data) {
   auto p = reinterpret_cast<char*>(
       WAVM::Runtime::memoryArrayPtr<U8>(memory(), pointer, static_cast<U64>(size)));
   if (p) {
