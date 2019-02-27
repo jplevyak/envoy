@@ -10,7 +10,7 @@ namespace {
 
 #if 0
 class LuaIntegrationTest : public HttpIntegrationTest,
-                           public testing::TestWithParam<Network::Address::IpVersion> {
+                           public TestBaseWithParam<Network::Address::IpVersion> {
 public:
   LuaIntegrationTest()
       : HttpIntegrationTest(Http::CodecClient::Type::HTTP1, GetParam(), realTime()) {}

@@ -8,6 +8,8 @@
 #include "envoy/config/wasm/v2/wasm.pb.validate.h"
 #include "envoy/http/filter.h"
 #include "envoy/server/wasm.h"
+#include "envoy/stats/scope.h"
+#include "envoy/stats/stats.h"
 #include "envoy/thread_local/thread_local.h"
 #include "envoy/upstream/cluster_manager.h"
 
@@ -196,6 +198,18 @@ public:
   virtual void httpRespond(const Pairs& response_headers, absl::string_view body,
                            const Pairs& response_trailers);
 
+  // Stats/Metrics
+  enum class MetricType : uint32_t {
+    Counter = 0,
+    Gauge = 1,
+    Histogram = 2,
+    Max = 2,
+  };
+  virtual uint32_t defineMetric(MetricType type, absl::string_view name);
+  virtual void incrementMetric(uint32_t metric_id, int64_t offset);
+  virtual void recordMetric(uint32_t metric_id, uint64_t value);
+  virtual uint64_t getMetric(uint32_t metric_id);
+
   // Connection
   virtual bool isSsl();
 
@@ -259,7 +273,8 @@ class Wasm : public Envoy::Server::Wasm,
              public std::enable_shared_from_this<Wasm> {
 public:
   Wasm(absl::string_view vm, absl::string_view id, absl::string_view initial_configuration,
-       Upstream::ClusterManager& cluster_manager, Event::Dispatcher& dispatcher);
+       Upstream::ClusterManager& cluster_manager, Event::Dispatcher& dispatcher,
+       Stats::Scope& scope, Stats::ScopeSharedPtr owned_scope = nullptr);
   Wasm(const Wasm& other);
   ~Wasm() {}
 
@@ -274,6 +289,7 @@ public:
   WasmVm* wasmVm() const { return wasm_vm_.get(); }
   Context* generalContext() const { return general_context_.get(); }
   Upstream::ClusterManager& clusterManager() const { return cluster_manager_; }
+  Stats::Scope& scope() const { return scope_; }
 
   std::shared_ptr<Context> createContext() { return std::make_shared<Context>(this); }
 
@@ -315,6 +331,24 @@ public:
 
 private:
   friend class Context;
+  static const uint32_t kMetricTypeMask = 0x3;
+  static const uint32_t kMetricTypeCounter = 0x0;
+  static const uint32_t kMetricTypeGauge = 0x1;
+  static const uint32_t kMetricTypeHistogram = 0x2;
+  static const uint32_t kMetricIdIncrement = 0x4;
+
+  bool isCounterMetricId(uint32_t metric_id) {
+    return (metric_id & kMetricTypeMask) == kMetricTypeCounter;
+  }
+  bool isGaugeMetricId(uint32_t metric_id) {
+    return (metric_id & kMetricTypeMask) == kMetricTypeGauge;
+  }
+  bool isHistogramMetricId(uint32_t metric_id) {
+    return (metric_id & kMetricTypeMask) == kMetricTypeHistogram;
+  }
+  uint32_t nextCounterMetricId() { return next_counter_metric_id_ += kMetricIdIncrement; }
+  uint32_t nextGaugeMetricId() { return next_gauge_metric_id_ += kMetricIdIncrement; }
+  uint32_t nextHistogramMetricId() { return next_histogram_metric_id_ += kMetricIdIncrement; }
 
   void registerCallbacks();    // Register functions called out from WASM.
   void establishEnvironment(); // Language specific enviroments.
@@ -322,6 +356,7 @@ private:
 
   Upstream::ClusterManager& cluster_manager_;
   Event::Dispatcher& dispatcher_;
+  Stats::Scope& scope_;
   std::string id_;
   std::string context_id_filter_state_data_name_;
   uint32_t next_context_id_ = 0;
@@ -330,6 +365,8 @@ private:
   std::function<void(Common::Wasm::Context*)> tick_;
   std::chrono::milliseconds tick_period_;
   Event::TimerPtr timer_;
+  Stats::ScopeSharedPtr
+      owned_scope_; // When scope_ is not owned by a higher level (e.g. for WASM services).
 
   // Calls into the VM.
   WasmCall0Void onStart_;
@@ -370,6 +407,14 @@ private:
 
   std::unique_ptr<Global<double>> emscripten_NaN_;
   std::unique_ptr<Global<double>> emscripten_Infinity_;
+
+  // Stats/Metrics
+  uint32_t next_counter_metric_id_ = kMetricTypeCounter;
+  uint32_t next_gauge_metric_id_ = kMetricTypeGauge;
+  uint32_t next_histogram_metric_id_ = kMetricTypeHistogram;
+  absl::flat_hash_map<uint32_t, Stats::Counter*> counters_;
+  absl::flat_hash_map<uint32_t, Stats::Gauge*> gauges_;
+  absl::flat_hash_map<uint32_t, Stats::Histogram*> histograms_;
 };
 
 inline WasmVm* Context::wasmVm() const { return wasm_->wasmVm(); }
@@ -495,7 +540,8 @@ std::unique_ptr<WasmVm> createWasmVm(absl::string_view vm);
 std::shared_ptr<Wasm> createWasm(absl::string_view id,
                                  const envoy::config::wasm::v2::VmConfig& vm_config,
                                  Upstream::ClusterManager& cluster_manager,
-                                 Event::Dispatcher& dispatcher, Api::Api& api);
+                                 Event::Dispatcher& dispatcher, Api::Api& api, Stats::Scope& scope,
+                                 Stats::ScopeSharedPtr owned_scope = nullptr);
 
 // Create a ThreadLocal VM from an existing VM (e.g. from createWasm() above).
 std::shared_ptr<Wasm> createThreadLocalWasm(Wasm& base_wasm, absl::string_view configuration,

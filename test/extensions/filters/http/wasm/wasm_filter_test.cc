@@ -16,6 +16,7 @@
 #include "test/mocks/upstream/mocks.h"
 #include "test/test_common/environment.h"
 #include "test/test_common/printers.h"
+#include "test/test_common/test_base.h"
 #include "test/test_common/utility.h"
 
 #include "gmock/gmock.h"
@@ -42,7 +43,7 @@ public:
   MOCK_METHOD2(scriptLog, void(spdlog::level::level_enum level, absl::string_view message));
 };
 
-class WasmHttpFilterTest : public testing::Test {
+class WasmHttpFilterTest : public TestBase {
 public:
   WasmHttpFilterTest() {}
   ~WasmHttpFilterTest() {}
@@ -51,10 +52,10 @@ public:
     envoy::config::filter::http::wasm::v2::Wasm proto_config;
     proto_config.mutable_vm_config()->set_vm("envoy.wasm.vm.wavm");
     proto_config.mutable_vm_config()->mutable_code()->set_inline_bytes(code);
-    Stats::IsolatedStoreImpl stats_store;
-    Api::ApiPtr api = Api::createApiForTest(stats_store);
+    Api::ApiPtr api = Api::createApiForTest(stats_store_);
+    scope_ = Stats::ScopeSharedPtr(stats_store_.createScope("wasm."));
     wasm_ = Extensions::Common::Wasm::createWasm(proto_config.id(), proto_config.vm_config(),
-                                                 cluster_manager_, dispatcher_, *api);
+                                                 cluster_manager_, dispatcher_, *api, *scope_);
   }
 
   void setupFilter() {
@@ -63,6 +64,8 @@ public:
         std::static_pointer_cast<Envoy::Extensions::Common::Wasm::Context>(filter_));
   }
 
+  Stats::IsolatedStoreImpl stats_store_;
+  Stats::ScopeSharedPtr scope_;
   NiceMock<ThreadLocal::MockInstance> tls_;
   NiceMock<Event::MockDispatcher> dispatcher_;
   Upstream::MockClusterManager cluster_manager_;

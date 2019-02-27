@@ -34,7 +34,9 @@ TEST(WasmFactoryTest, CreateWasmFromWASM) {
   ThreadLocal::MockInstance tls;
   Stats::IsolatedStoreImpl stats_store;
   Api::ApiPtr api = Api::createApiForTest(stats_store);
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api);
+  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
+  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
+                                                        scope);
   auto wasm = factory->createWasm(config, context);
   EXPECT_NE(wasm, nullptr);
 }
@@ -53,7 +55,9 @@ TEST(WasmFactoryTest, CreateWasmFromPrecompiledWASM) {
   ThreadLocal::MockInstance tls;
   Stats::IsolatedStoreImpl stats_store;
   Api::ApiPtr api = Api::createApiForTest(stats_store);
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api);
+  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
+  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
+                                                        scope);
   auto wasm = factory->createWasm(config, context);
   EXPECT_NE(wasm, nullptr);
 }
@@ -72,7 +76,9 @@ TEST(WasmFactoryTest, CreateWasmFromWASMPerThread) {
   testing::NiceMock<ThreadLocal::MockInstance> tls;
   Stats::IsolatedStoreImpl stats_store;
   Api::ApiPtr api = Api::createApiForTest(stats_store);
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api);
+  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
+  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
+                                                        scope);
   auto wasm = factory->createWasm(config, context);
   EXPECT_EQ(wasm, nullptr);
 }
@@ -91,7 +97,9 @@ TEST(WasmFactoryTest, CreateWasmFromWAT) {
   ThreadLocal::MockInstance tls;
   Stats::IsolatedStoreImpl stats_store;
   Api::ApiPtr api = Api::createApiForTest(stats_store);
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api);
+  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
+  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
+                                                        scope);
   auto wasm = factory->createWasm(config, context);
   EXPECT_NE(wasm, nullptr);
 }
@@ -126,7 +134,9 @@ TEST(WasmFactoryTest, CreateWasmFromInlineWAT) {
   ThreadLocal::MockInstance tls;
   Stats::IsolatedStoreImpl stats_store;
   Api::ApiPtr api = Api::createApiForTest(stats_store);
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api);
+  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
+  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
+                                                        scope);
   auto wasm = factory->createWasm(config, context);
   EXPECT_NE(wasm, nullptr);
 }
@@ -161,7 +171,9 @@ TEST(WasmFactoryTest, CreateWasmFromInlineWATWithAlias) {
   ThreadLocal::MockInstance tls;
   Stats::IsolatedStoreImpl stats_store;
   Api::ApiPtr api = Api::createApiForTest(stats_store);
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api);
+  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
+  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
+                                                        scope);
   auto wasm = factory->createWasm(config, context);
   EXPECT_NE(wasm, nullptr);
 }
@@ -196,7 +208,9 @@ TEST(WasmFactoryTest, CreateWasmFromInlineWATWithUnderscoreAlias) {
   ThreadLocal::MockInstance tls;
   Stats::IsolatedStoreImpl stats_store;
   Api::ApiPtr api = Api::createApiForTest(stats_store);
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api);
+  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
+  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
+                                                        scope);
   auto wasm = factory->createWasm(config, context);
   EXPECT_NE(wasm, nullptr);
 }
@@ -231,7 +245,9 @@ TEST(WasmFactoryTest, MissingImport) {
   ThreadLocal::MockInstance tls;
   Stats::IsolatedStoreImpl stats_store;
   Api::ApiPtr api = Api::createApiForTest(stats_store);
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api);
+  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
+  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
+                                                        scope);
   Server::WasmSharedPtr wasm;
   EXPECT_THROW_WITH_MESSAGE(
       wasm = factory->createWasm(config, context), Extensions::Common::Wasm::WasmException,

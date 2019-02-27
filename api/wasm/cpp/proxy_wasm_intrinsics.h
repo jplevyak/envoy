@@ -12,6 +12,7 @@
 #define EMSCRIPTEN_KEEPALIVE __attribute__((used)) __attribute__((visibility("default")))
 #endif
 
+// clang-format off
 /*
    API Calls into the VM.
 
@@ -19,26 +20,25 @@
    extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onStart();
    extern "C" EMSCRIPTEN_KEEPALIVE int main();  // only called if proxy_onStart() is not available.
    extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onTick();
-   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onCreate(uint32_t context_id);
-   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onRequestHeaders(uint32_t context_id);
-   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onRequestBody(uint32_t context_id,  uint32_t
-   body_buffer_length, uint32_t end_of_stream size); extern "C" ENSCRIPTEN_KEEPALIVE void
-   proxy_onRequestTrailers(uint32_t context_id); extern "C" ENSCRIPTEN_KEEPALIVE void
-   proxy_onRequestMetadata(uint32_t context_id); extern "C" ENSCRIPTEN_KEEPALIVE void
-   proxy_onResponseHeaders(uint32_t context_id); extern "C" ENSCRIPTEN_KEEPALIVE void
-   proxy_onResponseBody(uint32_t context_id,  uint32_t body_buffer_length, uint32_t end_of_stream
-   size); extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onResponseTrailers(uint32_t context_id); extern
-   "C" ENSCRIPTEN_KEEPALIVE void proxy_onResponseMetadata(uint32_t context_id); extern "C"
-   ENSCRIPTEN_KEEPALIVE void proxy_onHttpCallResponse(uint32_t context_id uint32_t token, uint32_t
-   header_pairs_ptr, uint32_t header_pairs_size, uint32_t body_ptr, uint32_t body_size, uint32_t
-   trailer_pairs_ptr, uint32_t trailer_pairs_size):
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onCreate(uint32_t context_id);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onRequestHeaders(uint32_t context_id);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onRequestBody(uint32_t context_id,  uint32_t body_buffer_length, uint32_t end_of_stream);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onRequestTrailers(uint32_t context_id);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onRequestMetadata(uint32_t context_id);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onResponseHeaders(uint32_t context_id);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onResponseBody(uint32_t context_id,  uint32_t body_buffer_length, uint32_t end_of_stream);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onResponseTrailers(uint32_t context_id);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onResponseMetadata(uint32_t context_id);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onHttpCallResponse(uint32_t context_id uint32_t token, uint32_t header_pairs_ptr,
+     uint32_t header_pairs_size, uint32_t body_ptr, uint32_t body_size, uint32_t trailer_pairs_ptr, uint32_t trailer_pairs_size):
    // The stream has completed.
-   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onDone(uint32_t context_id);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onDone(uint32_t context_id);
    // onLog occurs after onDone.
-   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onLog(uint32_t context_id);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onLog(uint32_t context_id);
    // The Context in the proxy has been destroyed and no further calls will be coming.
-   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onDelete(uint32_t context_id);
+   extern "C" EMSCRIPTEN_KEEPALIVE void proxy_onDelete(uint32_t context_id);
 */
+// clang-format on
 
 enum class LogLevel : int { trace, debug, info, warn, error, critical };
 extern "C" void proxy_log(LogLevel level, const char* logMessage, size_t messageSize);
@@ -134,9 +134,27 @@ extern "C" uint32_t proxy_httpCall(const char* uri_ptr, size_t uri_size, void* h
                                    void* trailer_pairs_ptr, size_t trailer_pairs_size,
                                    uint32_t timeout_milliseconds);
 
+// Metrics
+
+enum class MetricType : uint32_t {
+  Counter = 0,
+  Gauge = 1,
+  Histogram = 2,
+};
+// Returns a metric_id which can be used to report a metric. On error returns 0.
+extern "C" uint32_t proxy_defineMetric(MetricType type, const char* name_ptr, size_t name_size);
+extern "C" void proxy_incrementMetric(uint32_t metric_id, int64_t offset);
+extern "C" void proxy_recordMetric(uint32_t metric_id, uint64_t value);
+extern "C" uint64_t proxy_getMetric(uint32_t metric_id);
+
 //
 // High Level C++ API.
 //
+
+class ProxyException : std::runtime_error {
+public:
+  ProxyException(const std::string& message) : std::runtime_error(message) {}
+};
 
 inline void logTrace(const std::string& logMessage) {
   proxy_log(LogLevel::trace, logMessage.c_str(), logMessage.size());
@@ -478,4 +496,279 @@ inline uint32_t httpCall(std::string_view uri, const HeaderStringPairs& request_
   ::free(headers_ptr);
   ::free(trailers_ptr);
   return result;
+}
+
+// Low level metrics interface.
+
+inline uint32_t defineMetric(MetricType type, std::string_view name) {
+  return proxy_defineMetric(type, name.data(), name.size());
+}
+
+inline void incrementMetric(uint32_t metric_id, int64_t offset) {
+  proxy_incrementMetric(metric_id, offset);
+}
+
+inline void recordMetric(uint32_t metric_id, uint64_t value) {
+  proxy_recordMetric(metric_id, value);
+}
+
+inline uint64_t getMetric(uint32_t metric_id) { return proxy_getMetric(metric_id); }
+
+// Higher level metrics interface.
+
+struct MetricTag {
+  enum class TagType : uint32_t {
+    String = 0,
+    Int = 1,
+    Bool = 2,
+  };
+  std::string name;
+  TagType tagType;
+};
+
+struct MetricBase {
+  MetricBase(MetricType t, const std::string& n) : type(t), name(n) {}
+  MetricBase(MetricType t, const std::string& n, std::vector<MetricTag> ts)
+      : type(t), name(n), tags(ts.begin(), ts.end()) {}
+
+  MetricType type;
+  std::string name;
+  std::vector<MetricTag> tags;
+  std::unordered_map<std::string, uint32_t> metric_ids;
+
+  uint32_t resolveFullName(const std::string& n);
+  uint32_t resolveWithFields(const std::vector<const std::string>& fields);
+  std::string nameFromIdSlow(uint32_t id);
+};
+
+struct Metric : public MetricBase {
+  Metric(MetricType t, const std::string& n) : MetricBase(t, n) {}
+  Metric(MetricType t, const std::string& n, std::vector<MetricTag> ts) : MetricBase(t, n, ts) {}
+
+  template <typename... Fields> void increment(int64_t offset, Fields... tags);
+  template <typename... Fields> void record(uint64_t value, Fields... tags);
+  template <typename... Fields> uint64_t get(Fields... tags);
+  template <typename... Fields> uint32_t resolve(Fields... tags);
+};
+
+inline uint32_t MetricBase::resolveWithFields(const std::vector<const std::string>& fields) {
+  if (fields.size() != tags.size()) {
+    throw ProxyException("metric fields.size() != tags.size()");
+  }
+  size_t s = 0;
+  for (auto& t : tags) {
+    s += t.name.size() + 1; // 1 more for "."
+  }
+  for (auto& f : fields) {
+    s += f.size() + 1; // 1 more for "."
+  }
+  s += name.size() + 2; // "." and "\0";
+  std::string n;
+  n.reserve(s);
+  for (int i = 0; i < tags.size(); i++) {
+    n.append(tags[i].name);
+    n.append(".");
+    n.append(fields[i]);
+    n.append(".");
+  }
+  n.append(name);
+  return resolveFullName(n);
+}
+
+template <typename T> inline std::string ToString(T t) { return std::to_string(t); }
+
+template <> inline std::string ToString(const char* t) { return std::string(t); }
+
+template <> inline std::string ToString(std::string t) { return std::move(t); }
+
+template <> inline std::string ToString(bool t) { return t ? "true" : "false"; }
+
+inline uint32_t MetricBase::resolveFullName(const std::string& n) {
+  auto it = metric_ids.find(n);
+  if (it == metric_ids.end()) {
+    auto metric_id = defineMetric(type, n);
+    metric_ids[n] = metric_id;
+    return metric_id;
+  }
+  return it->second;
+}
+
+inline std::string MetricBase::nameFromIdSlow(uint32_t id) {
+  for (auto& p : metric_ids)
+    if (p.second == id)
+      return p.first;
+  return "";
+}
+
+template <typename... Fields> uint32_t Metric::resolve(Fields... f) {
+  std::vector<const std::string> fields{ToString(f)...};
+  return resolveWithFields(fields);
+}
+
+template <typename... Fields> void Metric::increment(int64_t offset, Fields... f) {
+  std::vector<const std::string> fields{ToString(f)...};
+  auto metric_id = resolveWithFields(fields);
+  incrementMetric(metric_id, offset);
+}
+
+template <typename... Fields> void Metric::record(uint64_t value, Fields... f) {
+  std::vector<const std::string> fields{ToString(f)...};
+  auto metric_id = resolveWithFields(fields);
+  recordMetric(metric_id, value);
+}
+
+template <typename... Fields> uint64_t Metric::get(Fields... f) {
+  std::vector<const std::string> fields{ToString(f)...};
+  auto metric_id = resolveWithFields(fields);
+  return getMetric(metric_id);
+}
+
+template <typename T> struct MetricTagDescriptor {
+  MetricTagDescriptor(std::string_view n) : name(n) {}
+  MetricTagDescriptor(const char* n) : name(n) {}
+  typedef T type;
+  std::string_view name;
+};
+
+template <typename T> inline MetricTag ToMetricTag(const MetricTagDescriptor<T>& d) { return {}; }
+
+template <> inline MetricTag ToMetricTag(const MetricTagDescriptor<const char*>& d) {
+  return {std::string(d.name), MetricTag::TagType::String};
+}
+
+template <> inline MetricTag ToMetricTag(const MetricTagDescriptor<std::string>& d) {
+  return {std::string(d.name), MetricTag::TagType::String};
+}
+
+template <> inline MetricTag ToMetricTag(const MetricTagDescriptor<std::string_view>& d) {
+  return {std::string(d.name), MetricTag::TagType::String};
+}
+
+template <> inline MetricTag ToMetricTag(const MetricTagDescriptor<int>& d) {
+  return {std::string(d.name), MetricTag::TagType::Int};
+}
+
+template <> inline MetricTag ToMetricTag(const MetricTagDescriptor<bool>& d) {
+  return {std::string(d.name), MetricTag::TagType::Bool};
+}
+
+struct SimpleCounter {
+  SimpleCounter(uint32_t id) : metric_id(id) {}
+
+  void increment(int64_t offset) { recordMetric(metric_id, offset); }
+  void record(int64_t offset) { increment(offset); }
+  uint64_t get() { return getMetric(metric_id); }
+  void operator++() { increment(1); }
+  void operator++(int) { increment(1); }
+
+  uint32_t metric_id;
+};
+
+struct SimpleGauge {
+  SimpleGauge(uint32_t id) : metric_id(id) {}
+
+  void record(uint64_t offset) { recordMetric(metric_id, offset); }
+  uint64_t get() { return getMetric(metric_id); }
+
+  uint32_t metric_id;
+};
+
+struct SimpleHistogram {
+  SimpleHistogram(uint32_t id) : metric_id(id) {}
+
+  void record(int64_t offset) { recordMetric(metric_id, offset); }
+
+  uint32_t metric_id;
+};
+
+template <typename... Tags> struct Counter : public MetricBase {
+  static Counter<Tags...>* New(std::string_view name, MetricTagDescriptor<Tags>... fieldnames);
+
+  SimpleCounter resolve(Tags... f) {
+    std::vector<const std::string> fields{ToString(f)...};
+    return SimpleCounter(resolveWithFields(fields));
+  }
+
+  void increment(int64_t offset, Tags... tags) {
+    std::vector<const std::string> fields{ToString(tags)...};
+    auto metric_id = resolveWithFields(fields);
+    incrementMetric(metric_id, offset);
+  }
+
+  void record(int64_t offset, Tags... tags) { increment(offset, tags...); }
+
+  uint64_t get(Tags... tags) {
+    std::vector<const std::string> fields{ToString(tags)...};
+    auto metric_id = resolveWithFields(fields);
+    return getMetric(metric_id);
+  }
+
+private:
+  Counter(const std::string& name, std::vector<MetricTag> tags)
+      : MetricBase(MetricType::Counter, name, tags) {}
+};
+
+template <typename... Tags>
+inline Counter<Tags...>* Counter<Tags...>::New(std::string_view name,
+                                               MetricTagDescriptor<Tags>... descriptors) {
+  return new Counter<Tags...>(std::string(name),
+                              std::vector<MetricTag>({ToMetricTag(descriptors)...}));
+}
+
+template <typename... Tags> struct Gauge : public MetricBase {
+  static Gauge<Tags...>* New(std::string_view name, MetricTagDescriptor<Tags>... fieldnames);
+
+  SimpleGauge resolve(Tags... f) {
+    std::vector<const std::string> fields{ToString(f)...};
+    return SimpleGauge(resolveWithFields(fields));
+  }
+
+  void record(int64_t offset, Tags... tags) {
+    std::vector<const std::string> fields{ToString(tags)...};
+    auto metric_id = resolveWithFields(fields);
+    recordMetric(metric_id, offset);
+  }
+
+  uint64_t get(Tags... tags) {
+    std::vector<const std::string> fields{ToString(tags)...};
+    auto metric_id = resolveWithFields(fields);
+    return getMetric(metric_id);
+  }
+
+private:
+  Gauge(const std::string& name, std::vector<MetricTag> tags)
+      : MetricBase(MetricType::Gauge, name, tags) {}
+};
+
+template <typename... Tags>
+inline Gauge<Tags...>* Gauge<Tags...>::New(std::string_view name,
+                                           MetricTagDescriptor<Tags>... descriptors) {
+  return new Gauge<Tags...>(std::string(name),
+                            std::vector<MetricTag>({ToMetricTag(descriptors)...}));
+}
+
+template <typename... Tags> struct Histogram : public MetricBase {
+  static Histogram<Tags...>* New(std::string_view name, MetricTagDescriptor<Tags>... fieldnames);
+
+  SimpleHistogram resolve(Tags... f) {
+    std::vector<const std::string> fields{ToString(f)...};
+    return SimpleHistogram(resolveWithFields(fields));
+  }
+
+  void record(int64_t offset, Tags... tags) {
+    std::vector<const std::string> fields{ToString(tags)...};
+    auto metric_id = resolveWithFields(fields);
+    recordMetric(metric_id, offset);
+  }
+
+private:
+  Histogram(const std::string& name, std::vector<MetricTag> tags)
+      : MetricBase(MetricType::Histogram, name, tags) {}
+};
+
+template <typename... Tags>
+inline Histogram<Tags...>* Histogram<Tags...>::New(std::string_view name,
+                                                   MetricTagDescriptor<Tags>... descriptors) {
+  return new Histogram<Tags...>(std::string(name),
+                                std::vector<MetricTag>({ToMetricTag(descriptors)...}));
 }

@@ -31,4 +31,8 @@ mergeInto(LibraryManager.library, {
     proxy_removeResponseTrailer: function () {},
     proxy_getResponseBodyBufferBytes: function () {},
     proxy_httpCall: function () {},
+    proxy_defineMetric: function () {},
+    proxy_incrementMetric: function () {},
+    proxy_recordMetric: function () {},
+    proxy_getMetric: function () {},
 });
