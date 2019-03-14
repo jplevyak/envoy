@@ -13,5 +13,9 @@ endif
 	rm -f $*.js $*.wast
 	chmod 644 $*.wat
 
+%.wasm %.wat: %.rs
+	cp $*.rs $*.wasm
+	cp $*.rs $*.wat
+
 clean:
 	rm *.wasm *.wat
