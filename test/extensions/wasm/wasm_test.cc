@@ -191,7 +191,7 @@ TEST(WasmTest, Stats) {
       "envoy.wasm.vm.wavm", "", "", cluster_manager, dispatcher, *scope, scope);
   EXPECT_NE(wasm, nullptr);
   const auto code = TestEnvironment::readFileToStringForTest(
-      TestEnvironment::substitute("{{ test_rundir }}/test/extensions/wasm/test_data/stats.wasm"));
+      TestEnvironment::substitute("{{ test_rundir }}/test/extensions/wasm/test_data/stats_cpp.wasm"));
   EXPECT_FALSE(code.empty());
   auto context = std::make_unique<TestContext>(wasm.get());
 
@@ -219,7 +219,7 @@ TEST(WasmTest, StatsHigherLevel) {
       "envoy.wasm.vm.wavm", "", "", cluster_manager, dispatcher, *scope, scope);
   EXPECT_NE(wasm, nullptr);
   const auto code = TestEnvironment::readFileToStringForTest(
-      TestEnvironment::substitute("{{ test_rundir }}/test/extensions/wasm/test_data/stats.wasm"));
+      TestEnvironment::substitute("{{ test_rundir }}/test/extensions/wasm/test_data/stats_cpp.wasm"));
   EXPECT_FALSE(code.empty());
   auto context = std::make_unique<TestContext>(wasm.get());
 
@@ -251,7 +251,7 @@ TEST(WasmTest, StatsHighLevel) {
       "envoy.wasm.vm.wavm", "", "", cluster_manager, dispatcher, *scope, scope);
   EXPECT_NE(wasm, nullptr);
   const auto code = TestEnvironment::readFileToStringForTest(
-      TestEnvironment::substitute("{{ test_rundir }}/test/extensions/wasm/test_data/stats.wasm"));
+      TestEnvironment::substitute("{{ test_rundir }}/test/extensions/wasm/test_data/stats_cpp.wasm"));
   EXPECT_FALSE(code.empty());
   auto context = std::make_unique<TestContext>(wasm.get());
 
