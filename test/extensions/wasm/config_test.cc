@@ -26,8 +26,8 @@ TEST(WasmFactoryTest, CreateWasmFromWASM) {
   ASSERT_NE(factory, nullptr);
   envoy::config::wasm::v2::WasmConfig config;
   config.mutable_vm_config()->set_vm("envoy.wasm.vm.wavm");
-  config.mutable_vm_config()->mutable_code()->set_filename(
-      TestEnvironment::substitute("{{ test_rundir }}/test/extensions/wasm/test_data/logging.wasm"));
+  config.mutable_vm_config()->mutable_code()->set_filename(TestEnvironment::substitute(
+      "{{ test_rundir }}/test/extensions/wasm/test_data/logging_cpp.wasm"));
   config.set_singleton(true);
   Upstream::MockClusterManager cluster_manager;
   Event::MockDispatcher dispatcher;
@@ -46,8 +46,8 @@ TEST(WasmFactoryTest, CreateWasmFromPrecompiledWASM) {
   ASSERT_NE(factory, nullptr);
   envoy::config::wasm::v2::WasmConfig config;
   config.mutable_vm_config()->set_vm("envoy.wasm.vm.wavm");
-  config.mutable_vm_config()->mutable_code()->set_filename(
-      TestEnvironment::substitute("{{ test_rundir }}/test/extensions/wasm/test_data/logging.wasm"));
+  config.mutable_vm_config()->mutable_code()->set_filename(TestEnvironment::substitute(
+      "{{ test_rundir }}/test/extensions/wasm/test_data/logging_cpp.wasm"));
   config.mutable_vm_config()->set_allow_precompiled(true);
   config.set_singleton(true);
   Upstream::MockClusterManager cluster_manager;
@@ -68,8 +68,8 @@ TEST(WasmFactoryTest, CreateWasmFromWASMPerThread) {
   ASSERT_NE(factory, nullptr);
   envoy::config::wasm::v2::WasmConfig config;
   config.mutable_vm_config()->set_vm("envoy.wasm.vm.wavm");
-  config.mutable_vm_config()->mutable_code()->set_filename(
-      TestEnvironment::substitute("{{ test_rundir }}/test/extensions/wasm/test_data/logging.wasm"));
+  config.mutable_vm_config()->mutable_code()->set_filename(TestEnvironment::substitute(
+      "{{ test_rundir }}/test/extensions/wasm/test_data/logging_cpp.wasm"));
   config.set_id("test_id");
   Upstream::MockClusterManager cluster_manager;
   Event::MockDispatcher dispatcher;
@@ -81,138 +81,6 @@ TEST(WasmFactoryTest, CreateWasmFromWASMPerThread) {
                                                         scope);
   auto wasm = factory->createWasm(config, context);
   EXPECT_EQ(wasm, nullptr);
-}
-
-TEST(WasmFactoryTest, CreateWasmFromWAT) {
-  auto factory =
-      Registry::FactoryRegistry<Server::Configuration::WasmFactory>::getFactory("envoy.wasm");
-  ASSERT_NE(factory, nullptr);
-  envoy::config::wasm::v2::WasmConfig config;
-  config.mutable_vm_config()->set_vm("envoy.wasm.vm.wavm");
-  config.mutable_vm_config()->mutable_code()->set_filename(
-      TestEnvironment::substitute("{{ test_rundir }}/test/extensions/wasm/test_data/wat.wat"));
-  config.set_singleton(true);
-  Upstream::MockClusterManager cluster_manager;
-  Event::MockDispatcher dispatcher;
-  ThreadLocal::MockInstance tls;
-  Stats::IsolatedStoreImpl stats_store;
-  Api::ApiPtr api = Api::createApiForTest(stats_store);
-  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
-                                                        scope);
-  auto wasm = factory->createWasm(config, context);
-  EXPECT_NE(wasm, nullptr);
-}
-
-TEST(WasmFactoryTest, CreateWasmFromInlineWAT) {
-  auto factory =
-      Registry::FactoryRegistry<Server::Configuration::WasmFactory>::getFactory("envoy.wasm");
-  ASSERT_NE(factory, nullptr);
-  envoy::config::wasm::v2::WasmConfig config;
-  config.mutable_vm_config()->set_vm("envoy.wasm.vm.wavm");
-  config.mutable_vm_config()->mutable_code()->set_inline_string(
-      "(module\n"
-      "  (type $0 (func (param i32 i32 i32)))\n"
-      "  (type $1 (func))\n"
-      "  (import \"env\" \"_proxy_log\" (func $_proxy_log (param i32 i32 i32)))\n"
-      "  (export \"memory\" (memory $2))\n"
-      "  (export \"main\" (func $main))\n"
-      "  (memory $2 17)\n"
-      "  (data $2 (i32.const 1048576) \"Hello, world!\")\n"
-      ""
-      " (func $main (type $1)\n"
-      "   i32.const 1\n"
-      "   i32.const 1048576\n"
-      "   i32.const 13\n"
-      "   call $_proxy_log\n"
-      "   )\n"
-      " )");
-  config.set_singleton(true);
-
-  Upstream::MockClusterManager cluster_manager;
-  Event::MockDispatcher dispatcher;
-  ThreadLocal::MockInstance tls;
-  Stats::IsolatedStoreImpl stats_store;
-  Api::ApiPtr api = Api::createApiForTest(stats_store);
-  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
-                                                        scope);
-  auto wasm = factory->createWasm(config, context);
-  EXPECT_NE(wasm, nullptr);
-}
-
-TEST(WasmFactoryTest, CreateWasmFromInlineWATWithAlias) {
-  auto factory =
-      Registry::FactoryRegistry<Server::Configuration::WasmFactory>::getFactory("envoy.wasm");
-  ASSERT_NE(factory, nullptr);
-  envoy::config::wasm::v2::WasmConfig config;
-  config.mutable_vm_config()->set_vm("envoy.wasm.vm.wavm");
-  config.mutable_vm_config()->mutable_code()->set_inline_string(
-      "(module\n"
-      "  (type $0 (func (param i32 i32 i32)))\n"
-      "  (type $1 (func))\n"
-      "  (import \"env\" \"_proxy_log\" (func $_proxy_log (param i32 i32 i32)))\n"
-      "  (export \"memory\" (memory $2))\n"
-      "  (export \"main\" (func $main))\n"
-      "  (memory $2 17)\n"
-      "  (data $2 (i32.const 1048576) \"Hello, world!\")\n"
-      ""
-      " (func $main (type $1)\n"
-      "   i32.const 1\n"
-      "   i32.const 1048576\n"
-      "   i32.const 13\n"
-      "   call $_proxy_log\n"
-      "   )\n"
-      " )");
-  config.set_singleton(true);
-
-  Upstream::MockClusterManager cluster_manager;
-  Event::MockDispatcher dispatcher;
-  ThreadLocal::MockInstance tls;
-  Stats::IsolatedStoreImpl stats_store;
-  Api::ApiPtr api = Api::createApiForTest(stats_store);
-  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
-                                                        scope);
-  auto wasm = factory->createWasm(config, context);
-  EXPECT_NE(wasm, nullptr);
-}
-
-TEST(WasmFactoryTest, CreateWasmFromInlineWATWithUnderscoreAlias) {
-  auto factory =
-      Registry::FactoryRegistry<Server::Configuration::WasmFactory>::getFactory("envoy.wasm");
-  ASSERT_NE(factory, nullptr);
-  envoy::config::wasm::v2::WasmConfig config;
-  config.mutable_vm_config()->set_vm("envoy.wasm.vm.wavm");
-  config.mutable_vm_config()->mutable_code()->set_inline_string(
-      "(module\n"
-      "  (type $0 (func (param i32 i32 i32)))\n"
-      "  (type $1 (func))\n"
-      "  (import \"env\" \"_proxy_log\" (func $proxy_log (param i32 i32 i32)))\n"
-      "  (export \"memory\" (memory $2))\n"
-      "  (export \"main\" (func $main))\n"
-      "  (memory $2 17)\n"
-      "  (data $2 (i32.const 1048576) \"Hello, world!\")\n"
-      ""
-      " (func $main (type $1)\n"
-      "   i32.const 1\n"
-      "   i32.const 1048576\n"
-      "   i32.const 13\n"
-      "   call $proxy_log\n"
-      "   )\n"
-      " )");
-  config.set_singleton(true);
-
-  Upstream::MockClusterManager cluster_manager;
-  Event::MockDispatcher dispatcher;
-  ThreadLocal::MockInstance tls;
-  Stats::IsolatedStoreImpl stats_store;
-  Api::ApiPtr api = Api::createApiForTest(stats_store);
-  auto scope = Stats::ScopeSharedPtr(stats_store.createScope("wasm."));
-  Server::Configuration::WasmFactoryContextImpl context(cluster_manager, dispatcher, tls, *api,
-                                                        scope);
-  auto wasm = factory->createWasm(config, context);
-  EXPECT_NE(wasm, nullptr);
 }
 
 TEST(WasmFactoryTest, MissingImport) {
