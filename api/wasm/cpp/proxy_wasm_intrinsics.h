@@ -4,9 +4,16 @@
 // NOLINT(namespace-envoy)
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#ifndef EMSCRIPTEN_PROTOBUF_LITE
+#include "proxy_wasm_intrinsics.pb.h"
+#else
+#include "proxy_wasm_intrinsics_lite.pb.h"
+#endif
 
 #ifndef EMSCRIPTEN_KEEPALIVE
 #define EMSCRIPTEN_KEEPALIVE __attribute__((used)) __attribute__((visibility("default")))
@@ -22,16 +29,17 @@
    extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onCreate(uint32_t context_id);
    extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onRequestHeaders(uint32_t context_id);
    extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onRequestBody(uint32_t context_id,  uint32_t
-   body_buffer_length, uint32_t end_of_stream size); extern "C" ENSCRIPTEN_KEEPALIVE void
-   proxy_onRequestTrailers(uint32_t context_id); extern "C" ENSCRIPTEN_KEEPALIVE void
-   proxy_onRequestMetadata(uint32_t context_id); extern "C" ENSCRIPTEN_KEEPALIVE void
-   proxy_onResponseHeaders(uint32_t context_id); extern "C" ENSCRIPTEN_KEEPALIVE void
-   proxy_onResponseBody(uint32_t context_id,  uint32_t body_buffer_length, uint32_t end_of_stream
-   size); extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onResponseTrailers(uint32_t context_id); extern
-   "C" ENSCRIPTEN_KEEPALIVE void proxy_onResponseMetadata(uint32_t context_id); extern "C"
-   ENSCRIPTEN_KEEPALIVE void proxy_onHttpCallResponse(uint32_t context_id uint32_t token, uint32_t
-   header_pairs_ptr, uint32_t header_pairs_size, uint32_t body_ptr, uint32_t body_size, uint32_t
-   trailer_pairs_ptr, uint32_t trailer_pairs_size):
+     body_buffer_length, uint32_t end_of_stream size);
+   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onRequestTrailers(uint32_t context_id);
+   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onRequestMetadata(uint32_t context_id);
+   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onResponseHeaders(uint32_t context_id);
+   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onResponseBody(uint32_t context_id,
+     uint32_t body_buffer_length, uint32_t end_of_stream size);
+   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onResponseTrailers(uint32_t context_id);
+   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onResponseMetadata(uint32_t context_id);
+   extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onHttpCallResponse(uint32_t context_id uint32_t token,
+     uint32_t header_pairs_ptr, uint32_t header_pairs_size, uint32_t body_ptr, uint32_t body_size,
+     uint32_t trailer_pairs_ptr, uint32_t trailer_pairs_size):
    // The stream has completed.
    extern "C" ENSCRIPTEN_KEEPALIVE void proxy_onDone(uint32_t context_id);
    // onLog occurs after onDone.
@@ -56,21 +64,30 @@ enum class FilterDataStatus : int {
   StopIterationAndWatermark = 2,
   StopIterationNoBuffer = 3
 };
+enum class StreamType : int { Request = 0, Response = 1 };
+enum class MetadataType : int {
+  Request = 0,
+  Response = 1,
+  RequestRoute = 2,   // Immutable
+  ResponseRoute = 3,  // Immutable
+  Log = 4             // Immutable
+};
 
-// StreamInfo
-extern "C" void proxy_getRequestStreamInfoProtocol(const char** value_ptr, size_t* value_size);
-extern "C" void proxy_getResponseStreamInfoProtocol(const char** value_ptr, size_t* value_size);
+// Stream Info
 
-extern "C" void proxy_getRequestMetadata(const char* key_ptr, size_t key_size,
-                                         const char** value_ptr_ptr, size_t* value_size_ptr);
-extern "C" void proxy_setRequestMetadata(const char* key_ptr, size_t key_size,
-                                         const char* value_ptr, size_t value_size);
-extern "C" void proxy_getRequestMetadataPairs(const char** value_ptr, size_t* value_size);
-extern "C" void proxy_getResponseMetadata(const char* key_ptr, size_t key_size,
-                                          const char** value_ptr_ptr, size_t* value_size_ptr);
-extern "C" void proxy_setResponseMetadata(const char* key_ptr, size_t key_size,
-                                          const char* value_ptr, size_t value_size);
-extern "C" void proxy_getResponseMetadataPairs(const char** value_ptr, size_t* value_size);
+extern "C" void proxy_getProtocol(StreamType type, const char** value_ptr, size_t* value_size);
+
+// Metadata
+extern "C" void proxy_getMetadata(MetadataType type, const char* key_ptr, size_t key_size,
+                                  const char** value_ptr_ptr, size_t* value_size_ptr);
+extern "C" void proxy_setMetadata(MetadataType type, const char* key_ptr, size_t key_size,
+                                  const char* value_ptr, size_t value_size);
+extern "C" void proxy_getMetadataPairs(MetadataType type, const char** value_ptr,
+                                       size_t* value_size);
+extern "C" void proxy_getMetadataStruct(MetadataType type, const char* name_ptr, size_t name_size,
+                                        const char** value_ptr_ptr, size_t* value_size_ptr);
+extern "C" void proxy_setMetadataStruct(MetadataType type, const char* name_ptr, size_t name_size,
+                                        const char* value_ptr, size_t value_size);
 
 // Continue
 extern "C" void proxy_continueRequest();
@@ -164,6 +181,7 @@ public:
   ~WasmData() { ::free((void*)data_); }
   const char* data() { return data_; }
   std::string_view view() { return {data_, size_}; }
+  std::string toString() { return std::string(view()); }
   std::vector<std::pair<std::string_view, std::string_view>> pairs();
 
   WasmData& operator=(const WasmData&) = delete;
@@ -197,7 +215,19 @@ inline std::vector<std::pair<std::string_view, std::string_view>> WasmData::pair
   return result;
 }
 
-// Calls coming into the WASM filter. Implement N
+struct PairHash {
+  template <typename T, typename U> std::size_t operator()(const std::pair<T, U>& x) const {
+    return std::hash<T>()(x.first) + std::hash<U>()(x.second);
+  }
+};
+
+struct Tuple3Hash {
+  template <typename T, typename U, typename V> std::size_t operator()(const std::tuple<T, U, V>& x) const {
+    return std::hash<T>()(std::get<0>(x)) + std::hash<U>()(std::get<1>(x)) + std::hash<V>()(std::get<2>(x));
+  }
+};
+
+// Context for a stream.  The distinguished context id == 0 is used for non-stream calls.
 class Context {
 public:
   explicit Context(uint32_t id) : id_(id) {}
@@ -232,59 +262,256 @@ public:
                                   std::unique_ptr<WasmData> body,
                                   std::unique_ptr<WasmData> trailer_pairs) {}
 
+  // Metadata
+  bool isImmutable(MetadataType type);
+  virtual bool isProactivelyCachable(MetadataType type);  // Cache all keys on any read.
+  // Caching Metadata calls.  Note: "name" refers to the metadata namespace.
+  google::protobuf::Value metadataValue(MetadataType type, std::string_view key);
+  google::protobuf::Value requestRouteMetadataValue(std::string_view key);
+  google::protobuf::Value responseRouteMetadataValue(std::string_view key);
+  google::protobuf::Value logMetadataValue(std::string_view key);
+  google::protobuf::Value requestMetadataValue(std::string_view key);
+  google::protobuf::Value responseMetadataValue(std::string_view key);
+  google::protobuf::Value namedMetadataValue(MetadataType type, std::string_view name, std::string_view key);
+  google::protobuf::Value requestMetadataValue(std::string_view name, std::string_view key);
+  google::protobuf::Value responseMetadataValue(std::string_view name, std::string_view key);
+  google::protobuf::Struct metadataStruct(MetadataType type, std::string_view name = "");
+  google::protobuf::Struct requestRouteMetadataStruct();
+  google::protobuf::Struct responseRouteMetadataStruct();
+  google::protobuf::Struct logMetadataStruct(std::string_view name = "");
+  google::protobuf::Struct requestMetadataStruct(std::string_view name = "");
+  google::protobuf::Struct responseMetadataStruct(std::string_view name = "");
+  // Uncached Metadata calls.
+  google::protobuf::Value getRequestMetadataValue(std::string_view key);
+  google::protobuf::Value getResponseMetadataValue(std::string_view key);
+  google::protobuf::Struct getRequestMetadataStruct(std::string_view name);
+  google::protobuf::Struct getResponseMetadataStruct(std::string_view name);
+
 private:
   uint32_t id_;
+  std::unordered_map<std::pair<MetadataType, std::string>, google::protobuf::Value, PairHash> value_cache_;
+  std::unordered_map<std::tuple<MetadataType, std::string, std::string>, google::protobuf::Value, Tuple3Hash> name_value_cache_;
+  std::unordered_map<std::pair<MetadataType, std::string>, google::protobuf::Struct, PairHash> struct_cache_;
 };
 
+inline bool Context::isImmutable(MetadataType type) {
+  switch (type) {
+    case MetadataType::Request:
+    case MetadataType::Response:
+      return false;
+    default:
+      return true;
+  }
+}
+
+// Override in subclasses to proactively cache certain types of metadata.
+inline bool Context::isProactivelyCachable(MetadataType type) {
+  return false;
+}
+
 // StreamInfo
-inline WasmDataPtr getRequestStreamInfoProtocol() {
+inline WasmDataPtr getProtocol(StreamType type) {
   const char* ptr = nullptr;
   size_t size = 0;
-  proxy_getRequestStreamInfoProtocol(&ptr, &size);
+  proxy_getProtocol(type, &ptr, &size);
   return std::make_unique<WasmData>(ptr, size);
 }
 
-inline WasmDataPtr getResponseStreamInfoProtocol() {
-  const char* ptr = nullptr;
-  size_t size = 0;
-  proxy_getResponseStreamInfoProtocol(&ptr, &size);
-  return std::make_unique<WasmData>(ptr, size);
-}
-
-inline WasmDataPtr getRequestMetadata(std::string_view key) {
+// Metadata
+inline WasmDataPtr getMetadata(MetadataType type, std::string_view key) {
   const char* value_ptr = nullptr;
   size_t value_size = 0;
-  proxy_getRequestMetadata(key.data(), key.size(), &value_ptr, &value_size);
+  proxy_getMetadata(type, key.data(), key.size(), &value_ptr, &value_size);
   return std::make_unique<WasmData>(value_ptr, value_size);
 }
 
-inline void setRequestMetadata(std::string_view key, std::string_view value) {
-  proxy_setRequestMetadata(key.data(), key.size(), value.data(), value.size());
-}
-
-inline WasmDataPtr getRequestMetadataPairs() {
+inline google::protobuf::Value getMetadataValue(MetadataType type, std::string_view key) {
   const char* value_ptr = nullptr;
   size_t value_size = 0;
-  proxy_getRequestMetadataPairs(&value_ptr, &value_size);
+  proxy_getMetadata(type, key.data(), key.size(), &value_ptr, &value_size);
+  if (!value_size) {
+    return {};
+  }
+  google::protobuf::Value value;
+  if (!value.ParseFromArray(value_ptr, value_size)) {
+    return {};
+  }
+  return value;
+}
+
+inline std::string getMetadataStringValue(MetadataType type, std::string_view key) {
+  return getMetadataValue(type, key).string_value();
+}
+
+inline void setMetadata(MetadataType type, std::string_view key, std::string_view value) {
+  proxy_setMetadata(type, key.data(), key.size(), value.data(), value.size());
+}
+
+inline void setMetadataValue(MetadataType type, std::string_view key,
+                             const google::protobuf::Value& value) {
+  std::string output;
+  if (!value.SerializeToString(&output)) {
+    return;
+  }
+  proxy_setMetadata(type, key.data(), key.size(), output.data(), output.size());
+}
+
+inline void setMetadataStringValue(MetadataType type, std::string_view key, std::string_view s) {
+  google::protobuf::Value value;
+  value.set_string_value(s.data(), s.size());
+  setMetadataValue(type, key, value);
+}
+
+inline WasmDataPtr getMetadataValuePairs(MetadataType type) {
+  const char* value_ptr = nullptr;
+  size_t value_size = 0;
+  proxy_getMetadataPairs(type, &value_ptr, &value_size);
   return std::make_unique<WasmData>(value_ptr, value_size);
 }
 
-inline WasmDataPtr getResponseMetadata(std::string_view key) {
+inline google::protobuf::Struct getMetadataStruct(MetadataType type, std::string_view name) {
   const char* value_ptr = nullptr;
   size_t value_size = 0;
-  proxy_getResponseMetadata(key.data(), key.size(), &value_ptr, &value_size);
-  return std::make_unique<WasmData>(value_ptr, value_size);
+  proxy_getMetadataStruct(type, name.data(), name.size(), &value_ptr, &value_size);
+  if (!value_size) {
+    return {};
+  }
+  google::protobuf::Struct s;
+  if (!s.ParseFromArray(value_ptr, value_size)) {
+    return {};
+  }
+  return s;
 }
 
-inline void setResponseMetadata(std::string_view key, std::string_view value) {
-  proxy_setResponseMetadata(key.data(), key.size(), value.data(), value.size());
+inline void setMetadataStruct(MetadataType type, std::string_view name,
+                             const google::protobuf::Struct& s) {
+  std::string output;
+  if (!s.SerializeToString(&output)) {
+    return;
+  }
+  proxy_setMetadataStruct(type, name.data(), name.size(), output.data(), output.size());
 }
 
-inline WasmDataPtr getResponseMetadataPairs() {
-  const char* value_ptr = nullptr;
-  size_t value_size = 0;
-  proxy_getResponseMetadataPairs(&value_ptr, &value_size);
-  return std::make_unique<WasmData>(value_ptr, value_size);
+inline google::protobuf::Value Context::metadataValue(MetadataType type, std::string_view key) {
+  auto cache_key = std::make_pair(type, std::string(key));
+  auto it = value_cache_.find(cache_key);
+  if (it != value_cache_.end()) {
+    return it->second;
+  }
+  if (isProactivelyCachable(type)) {
+    auto values = getMetadataValuePairs(type);
+    for (auto &p : values->pairs()) {
+      google::protobuf::Value value;
+      if (value.ParseFromArray(p.second.data(), p.second.size())) {
+        auto k = std::make_pair(type, p.first);
+        value_cache_[cache_key] = value;
+      }
+    }
+    auto it = value_cache_.find(cache_key);
+    if (it != value_cache_.end()) {
+      return it->second;
+    }
+    return {};
+  } else {
+    auto value = getMetadataValue(type, key);
+    value_cache_[cache_key] = value;
+    return value;
+  }
+}
+
+inline google::protobuf::Value Context::requestRouteMetadataValue(std::string_view key) {
+  return metadataValue(MetadataType::RequestRoute, key);
+}
+
+inline google::protobuf::Value Context::responseRouteMetadataValue(std::string_view key) {
+  return metadataValue(MetadataType::ResponseRoute, key);
+}
+
+inline google::protobuf::Value Context::logMetadataValue(std::string_view key) {
+  return metadataValue(MetadataType::Log, key);
+}
+
+inline google::protobuf::Value Context::requestMetadataValue(std::string_view key) {
+  return metadataValue(MetadataType::Request, key);
+}
+
+inline google::protobuf::Value Context::responseMetadataValue(std::string_view key) {
+  return metadataValue(MetadataType::Response, key);
+}
+
+inline google::protobuf::Value Context::namedMetadataValue(MetadataType type, std::string_view name, std::string_view key) {
+  auto n = std::string(name);
+  auto cache_key = std::make_tuple(type,  n, std::string(key));
+  auto it = name_value_cache_.find(cache_key);
+  if (it != name_value_cache_.end()) {
+    return it->second;
+  }
+  auto s = metadataStruct(type, name);
+  for (auto &f : s.fields()) {
+    auto k = std::make_tuple(type, n, f.first);
+    name_value_cache_[k] =  f.second;
+  }
+  struct_cache_[std::make_pair(type, n)] = std::move(s);
+  it = name_value_cache_.find(cache_key);
+  if (it != name_value_cache_.end()) {
+    return it->second;
+  }
+  return {};
+}
+
+inline google::protobuf::Value Context::requestMetadataValue(std::string_view name, std::string_view key) {
+  return namedMetadataValue(MetadataType::Request, name, key);
+}
+
+inline google::protobuf::Value Context::responseMetadataValue(std::string_view name, std::string_view key) {
+  return namedMetadataValue(MetadataType::Response, name, key);
+}
+
+inline google::protobuf::Struct Context::metadataStruct(MetadataType type, std::string_view name) {
+  auto cache_key = std::make_pair(type,  std::string(name));
+  auto it = struct_cache_.find(cache_key);
+  if (it != struct_cache_.end()) {
+    return it->second;
+  }
+  auto s = getMetadataStruct(MetadataType::Request, name);
+  struct_cache_[cache_key] = s;
+  return s;
+}
+
+inline google::protobuf::Struct Context::requestRouteMetadataStruct() {
+  return metadataStruct(MetadataType::RequestRoute);
+}
+
+inline google::protobuf::Struct Context::responseRouteMetadataStruct() {
+  return metadataStruct(MetadataType::ResponseRoute);
+}
+
+inline google::protobuf::Struct Context::logMetadataStruct(std::string_view name) {
+  return metadataStruct(MetadataType::Log, name);
+}
+
+inline google::protobuf::Struct Context::requestMetadataStruct(std::string_view name) {
+  return metadataStruct(MetadataType::Request, name);
+}
+
+inline google::protobuf::Struct Context::responseMetadataStruct(std::string_view name) {
+  return metadataStruct(MetadataType::Response, name);
+}
+
+inline google::protobuf::Value Context::getRequestMetadataValue(std::string_view key) {
+  return getMetadataValue(MetadataType::Request, key);
+}
+
+inline google::protobuf::Value Context::getResponseMetadataValue(std::string_view key) {
+  return getMetadataValue(MetadataType::Response, key);
+}
+
+inline google::protobuf::Struct Context::getRequestMetadataStruct(std::string_view name) {
+  return getMetadataStruct(MetadataType::Request, name);
+}
+
+inline google::protobuf::Struct Context::getResponseMetadataStruct(std::string_view name) {
+  return getMetadataStruct(MetadataType::Response, name);
 }
 
 // Continue

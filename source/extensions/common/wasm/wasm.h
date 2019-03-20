@@ -44,6 +44,21 @@ using WasmContextCall0Int = std::function<uint32_t(Context*, uint32_t context_id
 using WasmContextCall2Int =
     std::function<uint32_t(Context*, uint32_t context_id, uint32_t, uint32_t)>;
 
+// Sadly we don't have enum class inheritance in c++-14.
+enum class StreamType : int { Request = 0, Response = 1, MAX = 1 };
+enum class MetadataType : int {
+  Request = 0,
+  Response = 1,
+  RequestRoute = 2,
+  ResponseRoute = 3,
+  Log = 4,
+  MAX = 4
+};
+
+inline MetadataType StreamType2MetadataType(StreamType type) {
+  return static_cast<MetadataType>(type);
+}
+
 // A context which will be the target of callbacks for a particular session
 // e.g. a handler of a stream.
 class Context : public Http::StreamFilter,
@@ -57,7 +72,8 @@ public:
   WasmVm* wasmVm() const;
   Upstream::ClusterManager& clusterManager() const;
   uint32_t id() const { return id_; }
-  const StreamInfo::StreamInfo& streamInfo() const;
+  const StreamInfo::StreamInfo* getConstStreamInfo(MetadataType type) const;
+  StreamInfo::StreamInfo* getStreamInfo(MetadataType type) const;
 
   //
   // VM level downcalls into the WASM code on Context(id == 0).
@@ -133,16 +149,20 @@ public:
   // HTTP Filter Callbacks
   //
   // StreamInfo
-  virtual std::string getRequestStreamInfoProtocol();
-  virtual std::string getResponseStreamInfoProtocol();
-  // Metadata: the values are serialized ProtobufWkt::Struct
-  virtual std::string getRequestMetadata(absl::string_view key);
-  virtual void setRequestMetadata(absl::string_view key, absl::string_view serialized_proto_struct);
-  virtual PairsWithStringValues getRequestMetadataPairs();
-  virtual std::string getResponseMetadata(absl::string_view key);
-  virtual void setResponseMetadata(absl::string_view key,
-                                   absl::string_view serialized_proto_struct);
-  virtual PairsWithStringValues getResponseMetadataPairs();
+  virtual std::string getProtocol(StreamType type);
+
+  // Metadata
+  // When used with MetadataType::Request/Response refers to metadata with name "envoy.wasm": the
+  // values are serialized ProtobufWkt::Struct Value
+  virtual std::string getMetadata(MetadataType type, absl::string_view key);
+  virtual void setMetadata(MetadataType type, absl::string_view key,
+                           absl::string_view serialized_proto_struct);
+  virtual PairsWithStringValues getMetadataPairs(MetadataType type);
+  // Name is ignored when the type is not MetadataType::Request/Response: the values are serialized
+  // ProtobufWkt::Struct
+  virtual std::string getMetadataStruct(MetadataType type, absl::string_view name);
+  virtual void setMetadataStruct(MetadataType type, absl::string_view key,
+                                 absl::string_view serialized_proto_struct);
 
   // Continue
   virtual void continueRequest() {
@@ -206,6 +226,8 @@ protected:
 
   void onAsyncClientSuccess(uint32_t token, Envoy::Http::MessagePtr& response);
   void onAsyncClientFailure(uint32_t token, Http::AsyncClient::FailureReason reason);
+
+  const ProtobufWkt::Struct* getMetadataStructProto(MetadataType type, absl::string_view name = "");
 
   Wasm* const wasm_;
   const uint32_t id_;
@@ -390,18 +412,6 @@ private:
 
 inline WasmVm* Context::wasmVm() const { return wasm_->wasmVm(); }
 inline Upstream::ClusterManager& Context::clusterManager() const { return wasm_->clusterManager(); }
-
-inline const ProtobufWkt::Struct& getMetadata(Http::StreamFilterCallbacks* callbacks) {
-  if (callbacks->route() == nullptr || callbacks->route()->routeEntry() == nullptr) {
-    return ProtobufWkt::Struct::default_instance();
-  }
-  const auto& metadata = callbacks->route()->routeEntry()->metadata();
-  const auto filter_it = metadata.filter_metadata().find(HttpFilters::HttpFilterNames::get().Wasm);
-  if (filter_it == metadata.filter_metadata().end()) {
-    return ProtobufWkt::Struct::default_instance();
-  }
-  return filter_it->second;
-}
 
 // Wasm VM instance. Provides the low level WASM interface.
 class WasmVm : public Logger::Loggable<Logger::Id::wasm> {

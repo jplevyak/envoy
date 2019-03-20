@@ -196,58 +196,64 @@ Http::HeaderMapPtr buildHeaderMapFromPairs(const Pairs& pairs) {
 //
 
 // StreamInfo
-void getRequestStreamInfoProtocolHandler(void* raw_context, uint32_t value_ptr_ptr,
-                                         uint32_t value_size_ptr) {
+void getProtocolHandler(void* raw_context, uint32_t type, uint32_t value_ptr_ptr,
+                        uint32_t value_size_ptr) {
+  if (type > static_cast<int>(StreamType::MAX))
+    return;
   auto context = WASM_CONTEXT(raw_context);
-  context->wasm()->copyToPointerSize(context->getRequestStreamInfoProtocol(), value_ptr_ptr,
-                                     value_size_ptr);
+  context->wasm()->copyToPointerSize(context->getProtocol(static_cast<StreamType>(type)),
+                                    value_ptr_ptr, value_size_ptr);
 }
 
-void getResponseStreamInfoProtocolHandler(void* raw_context, uint32_t value_ptr_ptr,
-                                          uint32_t value_size_ptr) {
-  auto context = WASM_CONTEXT(raw_context);
-  context->wasm()->copyToPointerSize(context->getResponseStreamInfoProtocol(), value_ptr_ptr,
-                                     value_size_ptr);
-}
-
-void getRequestMetadataHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                               uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
+// Metadata
+void getMetadataHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size,
+                        uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
+  if (type > static_cast<int>(MetadataType::MAX))
+    return;
   auto context = WASM_CONTEXT(raw_context);
   context->wasm()->copyToPointerSize(
-      context->getRequestMetadata(context->wasmVm()->getMemory(key_ptr, key_size)), value_ptr_ptr,
-      value_size_ptr);
+      context->getMetadata(static_cast<MetadataType>(type),
+                           context->wasmVm()->getMemory(key_ptr, key_size)),
+      value_ptr_ptr, value_size_ptr);
 }
 
-void setRequestMetadataHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                               uint32_t value_ptr, uint32_t value_size) {
+void setMetadataHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size,
+                        uint32_t value_ptr, uint32_t value_size) {
+  if (type > static_cast<int>(MetadataType::MAX))
+    return;
   auto context = WASM_CONTEXT(raw_context);
-  context->setRequestMetadata(context->wasmVm()->getMemory(key_ptr, key_size),
-                              context->wasmVm()->getMemory(value_ptr, value_size));
+  context->setMetadata(static_cast<MetadataType>(type),
+                       context->wasmVm()->getMemory(key_ptr, key_size),
+                       context->wasmVm()->getMemory(value_ptr, value_size));
 }
 
-void getRequestMetadataPairsHandler(void* raw_context, uint32_t ptr_ptr, uint32_t size_ptr) {
+void getMetadataPairsHandler(void* raw_context, uint32_t type, uint32_t ptr_ptr,
+                             uint32_t size_ptr) {
+  if (type > static_cast<int>(MetadataType::MAX))
+    return;
   auto context = WASM_CONTEXT(raw_context);
-  getPairs(context, context->getRequestMetadataPairs(), ptr_ptr, size_ptr);
+  getPairs(context, context->getMetadataPairs(static_cast<MetadataType>(type)), ptr_ptr, size_ptr);
 }
 
-void getResponseMetadataHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                                uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
+void getMetadataStructHandler(void* raw_context, uint32_t type, uint32_t name_ptr,
+                              uint32_t name_size, uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
+  if (type > static_cast<int>(MetadataType::MAX))
+    return;
   auto context = WASM_CONTEXT(raw_context);
   context->wasm()->copyToPointerSize(
-      context->getResponseMetadata(context->wasmVm()->getMemory(key_ptr, key_size)), value_ptr_ptr,
-      value_size_ptr);
+      context->getMetadataStruct(static_cast<MetadataType>(type),
+                                 context->wasmVm()->getMemory(name_ptr, name_size)),
+      value_ptr_ptr, value_size_ptr);
 }
 
-void setResponseMetadataHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                                uint32_t value_ptr, uint32_t value_size) {
+void setMetadataStructHandler(void* raw_context, uint32_t type, uint32_t name_ptr,
+                              uint32_t name_size, uint32_t value_ptr, uint32_t value_size) {
+  if (type > static_cast<int>(MetadataType::MAX))
+    return;
   auto context = WASM_CONTEXT(raw_context);
-  context->setResponseMetadata(context->wasmVm()->getMemory(key_ptr, key_size),
-                               context->wasmVm()->getMemory(value_ptr, value_size));
-}
-
-void getResponseMetadataPairsHandler(void* raw_context, uint32_t ptr_ptr, uint32_t size_ptr) {
-  auto context = WASM_CONTEXT(raw_context);
-  getPairs(context, context->getResponseMetadataPairs(), ptr_ptr, size_ptr);
+  context->setMetadataStruct(static_cast<MetadataType>(type),
+                             context->wasmVm()->getMemory(name_ptr, name_size),
+                             context->wasmVm()->getMemory(value_ptr, value_size));
 }
 
 // Continue
@@ -442,6 +448,45 @@ uint32_t httpCallHandler(void* raw_context, uint32_t uri_ptr, uint32_t uri_size,
 uint32_t getTotalMemoryHandler(void*) { return 0x7FFFFFFF; }
 uint32_t _emscripten_get_heap_sizeHandler(void*) { return 0x7FFFFFFF; }
 void _llvm_trapHandler(void*) { throw WasmException("emscripten llvm_trap"); }
+void ___cxa_pure_virtualHandler(void*) { throw WasmException("emscripten cxa_pure_virtual"); }
+uint32_t ___call_mainHandler(void*, uint32_t, uint32_t) {
+  throw WasmException("emscripten call_main");
+  return 0;
+}
+uint32_t ___clock_gettimeHandler(void*, uint32_t, uint32_t) {
+  throw WasmException("emscripten clock_gettime");
+  return 0;
+}
+// pthread_equal is required to return 0 by the protobuf libarary.
+uint32_t _pthread_equalHandler(void*, uint32_t,
+                               uint32_t) { /* throw WasmException("emscripten pthread_equal"); */
+  return 0;
+}
+uint32_t _pthread_mutex_destroyHandler(void*, uint32_t) {
+  throw WasmException("emscripten pthread_mutex_destroy");
+  return 0;
+}
+uint32_t _pthread_cond_waitHandler(void*, uint32_t) {
+  throw WasmException("emscripten pthread_cond_wait");
+  return 0;
+}
+uint32_t _pthread_getspecificHandler(void*, uint32_t) {
+  throw WasmException("emscripten pthread_getspecific");
+  return 0;
+}
+uint32_t _pthread_key_createHandler(void*, uint32_t) {
+  throw WasmException("emscripten pthread_key_create");
+  return 0;
+}
+uint32_t _pthread_onceHandler(void*, uint32_t) {
+  throw WasmException("emscripten pthread_once");
+  return 0;
+}
+uint32_t _pthread_setspecificHandler(void*, uint32_t) {
+  throw WasmException("emscripten pthread_setspecific");
+  return 0;
+}
+void setTempRet0Handler(void*, uint32_t) { throw WasmException("emscripten setTempRet0"); }
 
 void setTickPeriodMillisecondsHandler(void* raw_context, uint32_t tick_period_milliseconds) {
   WASM_CONTEXT(raw_context)->setTickPeriod(std::chrono::milliseconds(tick_period_milliseconds));
@@ -503,6 +548,27 @@ void replaceHeader(Http::HeaderMap* map, absl::string_view key, absl::string_vie
     entry->value(value.data(), value.size());
   else
     map->addCopy(lower_key, std::string(value));
+}
+
+const ProtobufWkt::Struct*
+getStructProtoFromMetadata(const envoy::api::v2::core::Metadata& metadata,
+                           absl::string_view name = "") {
+  if (name.empty()) {
+    name = HttpFilters::HttpFilterNames::get().Wasm;
+  }
+  const auto filter_it = metadata.filter_metadata().find(std::string(name));
+  if (filter_it == metadata.filter_metadata().end()) {
+    return nullptr;
+  }
+  return &filter_it->second;
+}
+
+const ProtobufWkt::Struct* getRouteMetadataStructProto(Http::StreamFilterCallbacks* callbacks) {
+  if (callbacks == nullptr || callbacks->route() == nullptr ||
+      callbacks->route()->routeEntry() == nullptr) {
+    return nullptr;
+  }
+  return getStructProtoFromMetadata(callbacks->route()->routeEntry()->metadata());
 }
 
 const uint8_t* decodeVarint(const uint8_t* pos, const uint8_t* end, uint32_t* out) {
@@ -705,52 +771,105 @@ void Context::httpRespond(const Pairs& response_headers, absl::string_view body,
   (void)response_trailers;
 }
 
-const StreamInfo::StreamInfo& Context::streamInfo() const {
-  if (access_log_stream_info_)
-    return *access_log_stream_info_;
-  return decoder_callbacks_->streamInfo();
-}
-
 // StreamInfo
-std::string Context::getRequestStreamInfoProtocol() {
-  if (!decoder_callbacks_)
-    return "";
-  return Http::Utility::getProtocolString(streamInfo().protocol().value());
+StreamInfo::StreamInfo* Context::getStreamInfo(MetadataType type) const {
+  switch (type) {
+  case MetadataType::Request:
+    if (decoder_callbacks_) {
+      return &decoder_callbacks_->streamInfo();
+    }
+    break;
+  case MetadataType::Response:
+    if (encoder_callbacks_) {
+      return &encoder_callbacks_->streamInfo();
+    }
+    break;
+    // Note: Log is always const.
+  default:
+    break;
+  }
+  return nullptr;
 }
 
-std::string Context::getResponseStreamInfoProtocol() {
-  if (!encoder_callbacks_)
-    return "";
-  return Http::Utility::getProtocolString(streamInfo().protocol().value());
+const StreamInfo::StreamInfo* Context::getConstStreamInfo(MetadataType type) const {
+  switch (type) {
+  case MetadataType::Request:
+    if (decoder_callbacks_) {
+      return &decoder_callbacks_->streamInfo();
+    }
+    break;
+  case MetadataType::Response:
+    if (encoder_callbacks_) {
+      return &encoder_callbacks_->streamInfo();
+    }
+    break;
+  case MetadataType::Log:
+    if (access_log_stream_info_) {
+      return access_log_stream_info_;
+    }
+    break;
+  default:
+    break;
+  }
+  return nullptr;
 }
 
-// Metadata: the values are serialized ProtobufWkt::Struct
-std::string Context::getRequestMetadata(absl::string_view key) {
-  if (!decoder_callbacks_)
+std::string Context::getProtocol(StreamType type) {
+  auto streamInfo = getConstStreamInfo(StreamType2MetadataType(type));
+  if (!streamInfo)
     return "";
-  auto& proto_struct = getMetadata(decoder_callbacks_);
-  auto it = proto_struct.fields().find(std::string(key));
-  if (it == proto_struct.fields().end())
+  return Http::Utility::getProtocolString(streamInfo->protocol().value());
+}
+
+const ProtobufWkt::Struct* Context::getMetadataStructProto(MetadataType type,
+                                                           absl::string_view name) {
+  switch (type) {
+  case MetadataType::RequestRoute:
+    return getRouteMetadataStructProto(decoder_callbacks_);
+  case MetadataType::ResponseRoute:
+    return getRouteMetadataStructProto(encoder_callbacks_);
+  default: {
+    auto streamInfo = getConstStreamInfo(type);
+    if (!streamInfo) {
+      return nullptr;
+    }
+    return getStructProtoFromMetadata(streamInfo->dynamicMetadata(), name);
+  }
+  }
+}
+
+std::string Context::getMetadata(MetadataType type, absl::string_view key) {
+  auto proto_struct = getMetadataStructProto(type);
+  if (!proto_struct) {
     return "";
+  }
+  auto it = proto_struct->fields().find(std::string(key));
+  if (it == proto_struct->fields().end()) {
+    return "";
+  }
   std::string result;
   it->second.SerializeToString(&result);
   return result;
 }
 
-void Context::setRequestMetadata(absl::string_view key, absl::string_view serialized_proto_struct) {
-  if (!decoder_callbacks_)
+void Context::setMetadata(MetadataType type, absl::string_view key,
+                          absl::string_view serialized_proto_struct) {
+  auto streamInfo = getStreamInfo(type);
+  if (!streamInfo) {
     return;
-  decoder_callbacks_->streamInfo().setDynamicMetadata(
+  }
+  streamInfo->setDynamicMetadata(
       HttpFilters::HttpFilterNames::get().Wasm,
       MessageUtil::keyValueStruct(std::string(key), std::string(serialized_proto_struct)));
 }
 
-PairsWithStringValues Context::getRequestMetadataPairs() {
-  PairsWithStringValues result;
-  if (!encoder_callbacks_)
+PairsWithStringValues Context::getMetadataPairs(MetadataType type) {
+  auto proto_struct = getMetadataStructProto(type);
+  if (!proto_struct) {
     return {};
-  auto& proto_struct = getMetadata(encoder_callbacks_);
-  for (auto& p : proto_struct.fields()) {
+  }
+  PairsWithStringValues result;
+  for (auto& p : proto_struct->fields()) {
     std::string value;
     p.second.SerializeToString(&value);
     result.emplace_back(p.first, std::move(value));
@@ -758,38 +877,29 @@ PairsWithStringValues Context::getRequestMetadataPairs() {
   return result;
 }
 
-std::string Context::getResponseMetadata(absl::string_view key) {
-  if (!encoder_callbacks_)
+std::string Context::getMetadataStruct(MetadataType type, absl::string_view name) {
+  auto proto_struct = getMetadataStructProto(type, name);
+  if (!proto_struct) {
     return "";
-  auto& proto_struct = getMetadata(encoder_callbacks_);
-  auto it = proto_struct.fields().find(std::string(key));
-  if (it == proto_struct.fields().end())
-    return "";
-  std::string result;
-  it->second.SerializeToString(&result);
-  return result;
-}
-
-void Context::setResponseMetadata(absl::string_view key,
-                                  absl::string_view serialized_proto_struct) {
-  if (!encoder_callbacks_)
-    return;
-  encoder_callbacks_->streamInfo().setDynamicMetadata(
-      HttpFilters::HttpFilterNames::get().Wasm,
-      MessageUtil::keyValueStruct(std::string(key), std::string(serialized_proto_struct)));
-}
-
-PairsWithStringValues Context::getResponseMetadataPairs() {
-  PairsWithStringValues result;
-  if (!encoder_callbacks_)
-    return {};
-  auto& proto_struct = getMetadata(encoder_callbacks_);
-  for (auto& p : proto_struct.fields()) {
-    std::string value;
-    p.second.SerializeToString(&value);
-    result.emplace_back(p.first, std::move(value));
   }
-  return result;
+  std::string result;
+  if (proto_struct->SerializeToString(&result)) {
+    return result;
+  }
+  return "";
+}
+
+void Context::setMetadataStruct(MetadataType type, absl::string_view name,
+                                absl::string_view serialized_proto_struct) {
+  auto streamInfo = getStreamInfo(type);
+  if (!streamInfo) {
+    return;
+  }
+  ProtobufWkt::Struct proto_struct;
+  if (proto_struct.ParseFromArray(serialized_proto_struct.data(), serialized_proto_struct.size())) {
+    return;
+  }
+  streamInfo->setDynamicMetadata(std::string(name), proto_struct);
 }
 
 void Context::scriptLog(spdlog::level::level_enum level, absl::string_view message) {
@@ -958,6 +1068,17 @@ void Wasm::registerCallbacks() {
     _REGISTER(getTotalMemory);
     _REGISTER(_emscripten_get_heap_size);
     _REGISTER(_llvm_trap);
+    _REGISTER(___cxa_pure_virtual);
+    _REGISTER(___call_main);
+    _REGISTER(___clock_gettime);
+    _REGISTER(_pthread_equal);
+    _REGISTER(_pthread_mutex_destroy);
+    _REGISTER(_pthread_cond_wait);
+    _REGISTER(_pthread_getspecific);
+    _REGISTER(_pthread_key_create);
+    _REGISTER(_pthread_once);
+    _REGISTER(_pthread_setspecific);
+    _REGISTER(setTempRet0);
   }
 #undef _REGISTER
 
@@ -966,15 +1087,14 @@ void Wasm::registerCallbacks() {
   registerCallback(wasm_vm_.get(), "envoy", "_proxy_" #_fn, &_fn##Handler);
   _REGISTER_PROXY(log);
 
-  _REGISTER_PROXY(getRequestStreamInfoProtocol);
-  _REGISTER_PROXY(getResponseStreamInfoProtocol);
+  _REGISTER_PROXY(getProtocol);
 
-  _REGISTER_PROXY(getRequestMetadata);
-  _REGISTER_PROXY(setRequestMetadata);
-  _REGISTER_PROXY(getRequestMetadataPairs);
-  _REGISTER_PROXY(getResponseMetadata);
-  _REGISTER_PROXY(setResponseMetadata);
-  _REGISTER_PROXY(getResponseMetadataPairs);
+  _REGISTER_PROXY(getMetadata);
+  _REGISTER_PROXY(setMetadata);
+  _REGISTER_PROXY(getMetadataPairs);
+
+  _REGISTER_PROXY(getMetadataStruct);
+  _REGISTER_PROXY(setMetadataStruct);
 
   _REGISTER_PROXY(continueRequest);
   _REGISTER_PROXY(continueResponse);
