@@ -148,6 +148,7 @@ TEST(WasmTest, IntrinsicGlobals) {
       "{{ test_rundir }}/test/extensions/wasm/test_data/emscripten_cpp.wasm"));
   EXPECT_FALSE(code.empty());
   auto context = std::make_unique<TestContext>(wasm.get());
+  EXPECT_CALL(*context, scriptLog(spdlog::level::debug, Eq("pow(2.0, 2.0) 4.000000")));
   EXPECT_CALL(*context, scriptLog(spdlog::level::info, Eq("NaN nan")));
   EXPECT_CALL(*context, scriptLog(spdlog::level::warn, Eq("inf inf")));
   EXPECT_TRUE(wasm->initialize(code, "<test>", false));
