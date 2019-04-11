@@ -63,6 +63,8 @@ using WasmCallback5Int = uint32_t (*)(void*, uint32_t, uint32_t, uint32_t, uint3
 using WasmCallback9Int = uint32_t (*)(void*, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t,
                                       uint32_t, uint32_t, uint32_t, uint32_t);
 // Using the standard g++/clang mangling algorithm:
+// https://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling-builtin
+// Z = void, j = uint32_t, l = int64_t, m = uint64_t
 using WasmCallback_Zjl = void (*)(void*, uint32_t, int64_t);
 using WasmCallback_Zjm = void (*)(void*, uint32_t, uint64_t);
 using WasmCallback_mjj = uint64_t (*)(void*, uint32_t);
@@ -387,11 +389,17 @@ public:
 
 private:
   friend class Context;
-  static const uint32_t kMetricTypeMask = 0x3;
+  // These are the same as the values of the Context::MetricType enum, here separately for convenience.
   static const uint32_t kMetricTypeCounter = 0x0;
   static const uint32_t kMetricTypeGauge = 0x1;
   static const uint32_t kMetricTypeHistogram = 0x2;
+  static const uint32_t kMetricTypeMask = 0x3;
   static const uint32_t kMetricIdIncrement = 0x4;
+  static void StaticAsserts() {
+    static_assert(static_cast<uint32_t>(Context::MetricType::Counter) == kMetricTypeCounter, "");
+    static_assert(static_cast<uint32_t>(Context::MetricType::Gauge) == kMetricTypeGauge, "");
+    static_assert(static_cast<uint32_t>(Context::MetricType::Histogram) == kMetricTypeHistogram, "");
+  }
 
   bool isCounterMetricId(uint32_t metric_id) {
     return (metric_id & kMetricTypeMask) == kMetricTypeCounter;
@@ -412,7 +420,7 @@ private:
 
   Upstream::ClusterManager& cluster_manager_;
   Event::Dispatcher& dispatcher_;
-  Stats::Scope& scope_;
+  Stats::Scope& scope_;  // Either an inherited scope or owned_scope_ below.
   std::string id_;
   std::string context_id_filter_state_data_name_;
   uint32_t next_context_id_ = 0;
