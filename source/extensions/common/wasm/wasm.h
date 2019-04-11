@@ -320,7 +320,7 @@ public:
   Wasm(absl::string_view vm, absl::string_view id, absl::string_view initial_configuration,
        Upstream::ClusterManager& cluster_manager, Event::Dispatcher& dispatcher,
        Stats::Scope& scope, Stats::ScopeSharedPtr owned_scope = nullptr);
-  Wasm(const Wasm& other);
+  Wasm(const Wasm& other, Event::Dispatcher& dispatcher);
   ~Wasm() {}
 
   bool initialize(const std::string& code, absl::string_view name, bool allow_precompiled);
@@ -418,7 +418,6 @@ private:
   uint32_t next_context_id_ = 0;
   std::unique_ptr<WasmVm> wasm_vm_;
   std::shared_ptr<Context> general_context_; // Context unrelated to any specific stream.
-  std::function<void(Common::Wasm::Context*)> tick_;
   std::chrono::milliseconds tick_period_;
   Event::TimerPtr timer_;
   Stats::ScopeSharedPtr
