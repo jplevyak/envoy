@@ -85,6 +85,7 @@
   (export "_proxy_onResponseHeaders" (func $_proxy_onResponseHeaders))
   (export "_proxy_onResponseTrailers" (func $_proxy_onResponseTrailers))
   (export "_proxy_onStart" (func $_proxy_onStart))
+  (export "_proxy_onTick" (func $_proxy_onTick))
   (export "_pthread_cond_broadcast" (func $__ZN7Context17onRequestTrailersEv))
   (export "_pthread_mutex_lock" (func $__ZN7Context17onRequestTrailersEv))
   (export "_pthread_mutex_unlock" (func $__ZN7Context17onRequestTrailersEv))
@@ -125,12 +126,12 @@
     $__ZN6google8protobuf2io18StringOutputStream4NextEPPvPi $___stdio_write $___stdio_seek $___stdout_write $_sn_write $__ZNK10__cxxabiv117__class_type_info9can_catchEPKNS_16__shim_type_infoERPv $__ZNK10__cxxabiv123__fundamental_type_info9can_catchEPKNS_16__shim_type_infoERPv $b2
     $b3 $__ZNK6google8protobuf2io17ArrayOutputStream9ByteCountEv $__ZNK6google8protobuf2io18StringOutputStream9ByteCountEv $b3 $b4 $__ZN30protobuf_struct_5flite_2eprotoL21InitDefaultsListValueEv $__ZL25default_terminate_handlerv $__ZN6google8protobuf8internal20InitLogSilencerCountEv
     $__ZN6google8protobuf8internal22DeleteLogSilencerCountEv $__ZN10__cxxabiv112_GLOBAL__N_110construct_Ev $b4 $b4 $b5 $__ZN7ContextD2Ev $__ZN14ExampleContextD0Ev $__ZN7Context7onStartEv
-    $__ZN7Context7onStartEv $__ZN14ExampleContext6onDoneEv $__ZN14ExampleContext5onLogEv $__ZN7Context7onStartEv $__ZN14ExampleContextD0Ev $__ZN7Context7onStartEv $__ZN7Context7onStartEv $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EED2Ev
-    $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE15MapEntryWrapperD0Ev $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE5ClearEv $__ZN6google8protobuf5ValueD2Ev $__ZN6google8protobuf5ValueD0Ev $__ZN6google8protobuf5Value5ClearEv $__ZN6google8protobuf9ListValueD2Ev $__ZN6google8protobuf9ListValueD0Ev $__ZN6google8protobuf9ListValue5ClearEv
-    $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE15MapEntryWrapperD0Ev $__ZN6google8protobuf6StructD2Ev $__ZN6google8protobuf6StructD0Ev $__ZN6google8protobuf6Struct5ClearEv $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE15MapEntryWrapperD0Ev $__ZN6google8protobuf14FatalExceptionD2Ev $__ZN6google8protobuf14FatalExceptionD0Ev $__ZN7Context7onStartEv
-    $__ZN6google8protobuf2io17ArrayOutputStreamD0Ev $__ZN6google8protobuf2io17ArrayOutputStreamD0Ev $__ZN7Context7onStartEv $__ZN10__cxxabiv117__class_type_infoD0Ev $__ZN7Context7onStartEv $__ZN7Context7onStartEv $__ZN10__cxxabiv117__class_type_infoD0Ev $__ZNSt11logic_errorD2Ev
-    $__ZNSt11logic_errorD0Ev $__ZNSt11logic_errorD0Ev $__ZN10__cxxabiv117__class_type_infoD0Ev $__ZN10__cxxabiv117__class_type_infoD0Ev $__ZN6google8protobuf8internal21arena_destruct_objectINSt3__212basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEEEvPv $__ZN6google8protobuf8internal21arena_destruct_objectINSt3__212basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEEEvPv $__ZN6google8protobuf8internal14DestroyMessageEPKv $__ZN6google8protobuf8internal21arena_destruct_objectINS0_3MapINSt3__212basic_stringIcNS4_11char_traitsIcEENS4_9allocatorIcEEEENS0_5ValueEE8InnerMapEEEvPv
-    $__ZNSt3__217__call_once_proxyINS_5tupleIJRPFvvEEEEEEvPv $__ZN6google8protobuf8internalL14RunZeroArgFuncEPKv $__ZN6google8protobuf8internal21arena_destruct_objectINSt3__212basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEEEvPv $__ZN10__cxxabiv112_GLOBAL__N_19destruct_EPv $b5 $b5 $b5 $b5
+    $__ZN7Context7onStartEv $__ZN14ExampleContext6onDoneEv $__ZN14ExampleContext5onLogEv $__ZN7Context7onStartEv $__ZN7Context7onStartEv $__ZN14ExampleContextD0Ev $__ZN7Context7onStartEv $__ZN7Context7onStartEv
+    $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EED2Ev $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE15MapEntryWrapperD0Ev $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE5ClearEv $__ZN6google8protobuf5ValueD2Ev $__ZN6google8protobuf5ValueD0Ev $__ZN6google8protobuf5Value5ClearEv $__ZN6google8protobuf9ListValueD2Ev $__ZN6google8protobuf9ListValueD0Ev
+    $__ZN6google8protobuf9ListValue5ClearEv $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE15MapEntryWrapperD0Ev $__ZN6google8protobuf6StructD2Ev $__ZN6google8protobuf6StructD0Ev $__ZN6google8protobuf6Struct5ClearEv $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE15MapEntryWrapperD0Ev $__ZN6google8protobuf14FatalExceptionD2Ev $__ZN6google8protobuf14FatalExceptionD0Ev
+    $__ZN7Context7onStartEv $__ZN6google8protobuf2io17ArrayOutputStreamD0Ev $__ZN6google8protobuf2io17ArrayOutputStreamD0Ev $__ZN7Context7onStartEv $__ZN10__cxxabiv117__class_type_infoD0Ev $__ZN7Context7onStartEv $__ZN7Context7onStartEv $__ZN10__cxxabiv117__class_type_infoD0Ev
+    $__ZNSt11logic_errorD2Ev $__ZNSt11logic_errorD0Ev $__ZNSt11logic_errorD0Ev $__ZN10__cxxabiv117__class_type_infoD0Ev $__ZN10__cxxabiv117__class_type_infoD0Ev $__ZN6google8protobuf8internal21arena_destruct_objectINSt3__212basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEEEvPv $__ZN6google8protobuf8internal21arena_destruct_objectINSt3__212basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEEEvPv $__ZN6google8protobuf8internal14DestroyMessageEPKv
+    $__ZN6google8protobuf8internal21arena_destruct_objectINS0_3MapINSt3__212basic_stringIcNS4_11char_traitsIcEENS4_9allocatorIcEEEENS0_5ValueEE8InnerMapEEEvPv $__ZNSt3__217__call_once_proxyINS_5tupleIJRPFvvEEEEEEvPv $__ZN6google8protobuf8internalL14RunZeroArgFuncEPKv $__ZN6google8protobuf8internal21arena_destruct_objectINSt3__212basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEEEvPv $__ZN10__cxxabiv112_GLOBAL__N_19destruct_EPv $b5 $b5 $b5
     $b5 $b5 $b5 $b5 $b5 $b5 $b5 $b5
     $b5 $b5 $b5 $b5 $b6 $__ZN7Context11onConfigureENSt3__210unique_ptrI8WasmDataNS0_14default_deleteIS2_EEEE $__ZNK6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE11GetTypeNameEv $__ZNK6google8protobuf11MessageLite25InitializationErrorStringEv
     $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE21CheckTypeAndMergeFromERKS4_ $__ZNK6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE24SerializeWithCachedSizesEPNS0_2io17CodedOutputStreamE $__ZNK6google8protobuf5Value11GetTypeNameEv $__ZN6google8protobuf5Value21CheckTypeAndMergeFromERKNS0_11MessageLiteE $__ZNK6google8protobuf5Value24SerializeWithCachedSizesEPNS0_2io17CodedOutputStreamE $__ZNK6google8protobuf9ListValue11GetTypeNameEv $__ZN6google8protobuf9ListValue21CheckTypeAndMergeFromERKNS0_11MessageLiteE $__ZNK6google8protobuf9ListValue24SerializeWithCachedSizesEPNS0_2io17CodedOutputStreamE
@@ -140,7 +141,7 @@
     $b8 $__ZN7Context18onHttpCallResponseEjNSt3__210unique_ptrI8WasmDataNS0_14default_deleteIS2_EEEES5_S5_ $__ZNK10__cxxabiv117__class_type_info16search_below_dstEPNS_19__dynamic_cast_infoEPKvib $__ZNK10__cxxabiv120__si_class_type_info16search_below_dstEPNS_19__dynamic_cast_infoEPKvib $__ZNK10__cxxabiv121__vmi_class_type_info16search_below_dstEPNS_19__dynamic_cast_infoEPKvib $b8 $b8 $b8
     $b9 $__ZNK10__cxxabiv117__class_type_info16search_above_dstEPNS_19__dynamic_cast_infoEPKvS4_ib $__ZNK10__cxxabiv120__si_class_type_info16search_above_dstEPNS_19__dynamic_cast_infoEPKvS4_ib $__ZNK10__cxxabiv121__vmi_class_type_info16search_above_dstEPNS_19__dynamic_cast_infoEPKvS4_ib $b10)
   (data $27 (i32.const 1024)
-    "_0\00\00d0\00\00l0\00\00r0")
+    "g0\00\00l0\00\00t0\00\00z0")
   (data $27 (i32.const 1168)
     "\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0"
     "\f0\f0\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\01\02\03\03\03\03\03\03\03\03\03\03\03\03\07\03\03\04\05\05\05\06\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0\f0"
@@ -245,63 +246,63 @@
     "\89\00\00\00\8b\00\00\00\95\00\00\00\97\00\00\00\9d\00\00\00\a3\00\00\00\a7\00\00\00\ad\00\00\00\b3\00\00\00\b5\00\00\00\bf\00\00\00\c1\00\00\00\c5\00\00\00\c7\00\00\00\d3\00\00\00\01\00\00\00"
     "\0b\00\00\00\0d\00\00\00\11\00\00\00\13\00\00\00\17\00\00\00\1d\00\00\00\1f\00\00\00%\00\00\00)\00\00\00+\00\00\00/\00\00\005\00\00\00;\00\00\00=\00\00\00C\00\00\00G\00\00\00"
     "I\00\00\00O\00\00\00S\00\00\00Y\00\00\00a\00\00\00e\00\00\00g\00\00\00k\00\00\00m\00\00\00q\00\00\00y\00\00\00\7f\00\00\00\83\00\00\00\89\00\00\00\8b\00\00\00\8f\00\00\00"
-    "\95\00\00\00\97\00\00\00\9d\00\00\00\a3\00\00\00\a7\00\00\00\a9\00\00\00\ad\00\00\00\b3\00\00\00\b5\00\00\00\bb\00\00\00\bf\00\00\00\c1\00\00\00\c5\00\00\00\c7\00\00\00\d1\00\00\00P \00\00"
-    "\ce!\00\00x \00\00\bd!\00\00\e0\18\00\00\00\00\00\00P \00\00m\"\00\00\e4 \00\00.\"\00\00\00\00\00\00\01\00\00\00\f8\18\00\00\00\00\00\00P \00\00\bf\"\00\00x \00\00"
-    "'-\00\00\d0\19\00\00\00\00\00\00x \00\00\09,\00\00@\19\00\00\00\00\00\00x \00\00\c6%\00\00P\19\00\00\00\00\00\00x \00\00\f6%\00\00`\19\00\00\00\00\00\00x \00\00"
-    "\bc&\00\00\d0\19\00\00\00\00\00\00x \00\00\d6+\00\00\d0\19\00\00\00\00\00\00\e4 \00\00\94*\00\00\00\00\00\00\01\00\00\00\98\19\00\00\00\00\00\00P \00\00\01+\00\00x \00\00"
-    "\f0+\00\00\d0\19\00\00\00\00\00\00x \00\00Z-\00\00\00\1a\00\00\00\00\00\00\ff\ff\ff\ff\ff\ff\ff\ff")
+    "\95\00\00\00\97\00\00\00\9d\00\00\00\a3\00\00\00\a7\00\00\00\a9\00\00\00\ad\00\00\00\b3\00\00\00\b5\00\00\00\bb\00\00\00\bf\00\00\00\c1\00\00\00\c5\00\00\00\c7\00\00\00\d1\00\00\00X \00\00"
+    "\d6!\00\00\80 \00\00\c5!\00\00\e0\18\00\00\00\00\00\00X \00\00u\"\00\00\ec \00\006\"\00\00\00\00\00\00\01\00\00\00\f8\18\00\00\00\00\00\00X \00\00\c7\"\00\00\80 \00\00"
+    "/-\00\00\d0\19\00\00\00\00\00\00\80 \00\00\11,\00\00@\19\00\00\00\00\00\00\80 \00\00\ce%\00\00P\19\00\00\00\00\00\00\80 \00\00\fe%\00\00`\19\00\00\00\00\00\00\80 \00\00"
+    "\c4&\00\00\d0\19\00\00\00\00\00\00\80 \00\00\de+\00\00\d0\19\00\00\00\00\00\00\ec \00\00\9c*\00\00\00\00\00\00\01\00\00\00\98\19\00\00\00\00\00\00X \00\00\09+\00\00\80 \00\00"
+    "\f8+\00\00\d0\19\00\00\00\00\00\00\80 \00\00b-\00\00\00\1a\00\00\00\00\00\00\ff\ff\ff\ff\ff\ff\ff\ff")
   (data $27 (i32.const 6608)
-    "P \00\00_2\00\00x \00\00M8\00\00\f8\19\00\00\00\00\00\00x \00\00\099\00\00\f8\19\00\00\00\00\00\00P \00\00\d59\00\00P \00\00\dd:\00\00x \00\00=;\00\00"
-    "\18\1a\00\00\00\00\00\00x \00\00\ea:\00\00(\1a\00\00\00\00\00\00P \00\00\0b;\00\00x \00\00\18;\00\00\08\1a\00\00\00\00\00\00x \00\00\1f<\00\00\00\1a\00\00\00\00\00\00"
-    "x \00\00/<\00\00@\1a\00\00\00\00\00\00x \00\00d<\00\00\18\1a\00\00\00\00\00\00x \00\00@<\00\00`\1a\00\00\00\00\00\00x \00\00\86<\00\00\18\1a\00\00\00\00\00\00"
-    "\c8 \00\00\ae<\00\00\c8 \00\00\b0<\00\00x \00\00\b2<\00\00\08\1a")
+    "X \00\00g2\00\00\80 \00\00U8\00\00\f8\19\00\00\00\00\00\00\80 \00\00\119\00\00\f8\19\00\00\00\00\00\00X \00\00\dd9\00\00X \00\00\e5:\00\00\80 \00\00E;\00\00"
+    "\18\1a\00\00\00\00\00\00\80 \00\00\f2:\00\00(\1a\00\00\00\00\00\00X \00\00\13;\00\00\80 \00\00 ;\00\00\08\1a\00\00\00\00\00\00\80 \00\00'<\00\00\00\1a\00\00\00\00\00\00"
+    "\80 \00\007<\00\00@\1a\00\00\00\00\00\00\80 \00\00l<\00\00\18\1a\00\00\00\00\00\00\80 \00\00H<\00\00`\1a\00\00\00\00\00\00\80 \00\00\8e<\00\00\18\1a\00\00\00\00\00\00"
+    "\d0 \00\00\b6<\00\00\d0 \00\00\b8<\00\00\80 \00\00\ba<\00\00\08\1a")
   (data $27 (i32.const 6836)
-    "\e8\18\00\00\01\00\00\00\02\00\00\00\01\00\00\00\03\00\00\00\04\00\00\00\01\00\00\00\01\00\00\00\02\00\00\00\03\00\00\00\02\00\00\00\04\00\00\00\05\00\00\00\06\00\00\00\07\00\00\00\01\00\00\00"
-    "\01\00\00\00\00\00\00\00\e0\18\00\00\01\00\00\00\08\00\00\00\01\00\00\00\03\00\00\00\04\00\00\00\05\00\00\00\03\00\00\00\02\00\00\00\03\00\00\00\02\00\00\00\04\00\00\00\09\00\00\00\n\00\00\00"
-    "\07\00\00\00\01\00\00\00\01\00\00\00\ff\ff\ff\ff\00\00\00\00\01")
-  (data $27 (i32.const 6996)
-    "@\19\00\00\0b\00\00\00\0c\00\00\00\02\00\00\00\06\00\00\00\02\00\00\00\07\00\00\00\08\00\00\00\0d\00\00\00\09\00\00\00\03\00\00\00\04\00\00\00\03\00\00\00\n\00\00\00\05\00\00\00\04\00\00\00"
-    "\0b\00\00\00\04\00\00\00\0c\00\00\00\0d\00\00\00\0e\00\00\00\00\00\00\00\a0\19\00\00\0e\00\00\00\0f\00\00\00\06\00\00\00\0f\00\00\00\05\00\00\00\10\00\00\00\11\00\00\00\10\00\00\00\12\00\00\00"
-    "\03\00\00\00\07\00\00\00\06\00\00\00\13\00\00\00\08\00\00\00\04\00\00\00\14\00\00\00\05\00\00\00\0c\00\00\00\00\00\00\00 \19\00\00\11\00\00\00\12\00\00\00\09\00\00\00\15\00\00\00\07\00\00\00"
-    "\16\00\00\00\17\00\00\00\13\00\00\00\18\00\00\00\03\00\00\00\n\00\00\00\08\00\00\00\19\00\00\00\0b\00\00\00\04\00\00\00\1a\00\00\00\05\00\00\00\0c\00\00\00\00\00\00\000\19\00\00\0b\00\00\00"
-    "\14\00\00\00\02\00\00\00\06\00\00\00\02\00\00\00\07\00\00\00\08\00\00\00\0d\00\00\00\09\00\00\00\03\00\00\00\04\00\00\00\03\00\00\00\n\00\00\00\05\00\00\00\04\00\00\00\0b\00\00\00\04\00\00\00"
-    "\0c\00\00\00\1b\00\00\00\1c\00\00\00\00\00\00\00p\19\00\00\15\00\00\00\16\00\00\00\0c\00\00\00\1d\00\00\00\09\00\00\00\1e\00\00\00\1f\00\00\00\17\00\00\00 \00\00\00\03\00\00\00\0d\00\00\00"
-    "\n\00\00\00!\00\00\00\0e\00\00\00\04\00\00\00\"\00\00\00\05\00\00\00\0c\00\00\00\00\00\00\00`\19\00\00\0b\00\00\00\18\00\00\00\02\00\00\00\06\00\00\00\02\00\00\00\07\00\00\00\08\00\00\00"
-    "\0d\00\00\00\09\00\00\00\03\00\00\00\04\00\00\00\03\00\00\00\n\00\00\00\05\00\00\00\04\00\00\00\0b\00\00\00\04\00\00\00\0c\00\00\00\0d\00\00\00\0e\00\00\00\00\00\00\00\b0\19\00\00\19\00\00\00"
-    "\1a\00\00\00#\00\00\00\00\00\00\00\d8\19\00\00\1b\00\00\00\1c\00\00\00\06\00\00\00\0f\00\00\00\01\00\00\00\07\00\00\00$\00\00\00\00\00\00\00\e8\19\00\00\1b\00\00\00\1d\00\00\00\08\00\00\00"
+    "\e8\18\00\00\01\00\00\00\02\00\00\00\01\00\00\00\03\00\00\00\04\00\00\00\01\00\00\00\01\00\00\00\02\00\00\00\03\00\00\00\02\00\00\00\04\00\00\00\05\00\00\00\06\00\00\00\07\00\00\00\08\00\00\00"
+    "\01\00\00\00\01\00\00\00\00\00\00\00\e0\18\00\00\01\00\00\00\09\00\00\00\01\00\00\00\03\00\00\00\04\00\00\00\05\00\00\00\03\00\00\00\02\00\00\00\03\00\00\00\02\00\00\00\04\00\00\00\n\00\00\00"
+    "\0b\00\00\00\07\00\00\00\08\00\00\00\01\00\00\00\01\00\00\00\ff\ff\ff\ff\00\00\00\00\01")
+  (data $27 (i32.const 7004)
+    "@\19\00\00\0c\00\00\00\0d\00\00\00\02\00\00\00\06\00\00\00\02\00\00\00\07\00\00\00\08\00\00\00\0e\00\00\00\09\00\00\00\03\00\00\00\04\00\00\00\03\00\00\00\n\00\00\00\05\00\00\00\04\00\00\00"
+    "\0b\00\00\00\04\00\00\00\0c\00\00\00\0d\00\00\00\0e\00\00\00\00\00\00\00\a0\19\00\00\0f\00\00\00\10\00\00\00\06\00\00\00\0f\00\00\00\05\00\00\00\10\00\00\00\11\00\00\00\11\00\00\00\12\00\00\00"
+    "\03\00\00\00\07\00\00\00\06\00\00\00\13\00\00\00\08\00\00\00\04\00\00\00\14\00\00\00\05\00\00\00\0c\00\00\00\00\00\00\00 \19\00\00\12\00\00\00\13\00\00\00\09\00\00\00\15\00\00\00\07\00\00\00"
+    "\16\00\00\00\17\00\00\00\14\00\00\00\18\00\00\00\03\00\00\00\n\00\00\00\08\00\00\00\19\00\00\00\0b\00\00\00\04\00\00\00\1a\00\00\00\05\00\00\00\0c\00\00\00\00\00\00\000\19\00\00\0c\00\00\00"
+    "\15\00\00\00\02\00\00\00\06\00\00\00\02\00\00\00\07\00\00\00\08\00\00\00\0e\00\00\00\09\00\00\00\03\00\00\00\04\00\00\00\03\00\00\00\n\00\00\00\05\00\00\00\04\00\00\00\0b\00\00\00\04\00\00\00"
+    "\0c\00\00\00\1b\00\00\00\1c\00\00\00\00\00\00\00p\19\00\00\16\00\00\00\17\00\00\00\0c\00\00\00\1d\00\00\00\09\00\00\00\1e\00\00\00\1f\00\00\00\18\00\00\00 \00\00\00\03\00\00\00\0d\00\00\00"
+    "\n\00\00\00!\00\00\00\0e\00\00\00\04\00\00\00\"\00\00\00\05\00\00\00\0c\00\00\00\00\00\00\00`\19\00\00\0c\00\00\00\19\00\00\00\02\00\00\00\06\00\00\00\02\00\00\00\07\00\00\00\08\00\00\00"
+    "\0e\00\00\00\09\00\00\00\03\00\00\00\04\00\00\00\03\00\00\00\n\00\00\00\05\00\00\00\04\00\00\00\0b\00\00\00\04\00\00\00\0c\00\00\00\0d\00\00\00\0e\00\00\00\00\00\00\00\b0\19\00\00\1a\00\00\00"
+    "\1b\00\00\00#\00\00\00\00\00\00\00\d8\19\00\00\1c\00\00\00\1d\00\00\00\06\00\00\00\0f\00\00\00\01\00\00\00\07\00\00\00$\00\00\00\00\00\00\00\e8\19\00\00\1c\00\00\00\1e\00\00\00\08\00\00\00"
     "\10\00\00\00\02\00\00\00\07\00\00\00$")
-  (data $27 (i32.const 7593)
-    "\01\00\00\00\09\00\00\00\00\00\00\08\00\00\00\01\00\00\00    \00\00\00\00\10\04\00\00\b0D\00\00\b4D\00\00\10\0d\00\00\d8\1d\00\00\05")
-  (data $27 (i32.const 7652)
+  (data $27 (i32.const 7601)
+    "\01\00\00\00\09\00\00\00\00\00\00\08\00\00\00\01\00\00\00    \00\00\00\00\10\04\00\00\b0D\00\00\b4D\00\00\10\0d\00\00\e0\1d\00\00\05")
+  (data $27 (i32.const 7660)
     "%")
-  (data $27 (i32.const 7676)
+  (data $27 (i32.const 7684)
     "\09\00\00\00\n\00\00\00\beD")
-  (data $27 (i32.const 7700)
+  (data $27 (i32.const 7708)
     "\02")
-  (data $27 (i32.const 7715)
+  (data $27 (i32.const 7723)
     "\ff\ff\ff\ff\ff")
-  (data $27 (i32.const 7764)
+  (data $27 (i32.const 7772)
     "\05")
-  (data $27 (i32.const 7776)
+  (data $27 (i32.const 7784)
     "%")
-  (data $27 (i32.const 7800)
+  (data $27 (i32.const 7808)
     "\0b\00\00\00\n\00\00\00\e8<\00\00\00\04")
-  (data $27 (i32.const 7824)
+  (data $27 (i32.const 7832)
     "\01")
-  (data $27 (i32.const 7839)
+  (data $27 (i32.const 7847)
     "\n\ff\ff\ff\ff")
-  (data $27 (i32.const 7888)
-    "T\1e")
-  (data $27 (i32.const 7928)
+  (data $27 (i32.const 7896)
+    "\\\1e")
+  (data $27 (i32.const 7936)
     "\0c")
-  (data $27 (i32.const 7967)
+  (data $27 (i32.const 7975)
     "\ff\ff\ff\ff\ff")
-  (data $27 (i32.const 8204)
+  (data $27 (i32.const 8212)
     "@B")
-  (data $27 (i32.const 8260)
-    "\02\00\00\00\00\00\00\00\08\1a\00\00\1e\00\00\00\1f\00\00\00 \00\00\00!\00\00\00\0d\00\00\00\01\00\00\00\02\00\00\00\01\00\00\00\00\00\00\000\1a\00\00\1e\00\00\00\"\00\00\00 \00\00\00"
-    "!\00\00\00\0d\00\00\00\02\00\00\00\03\00\00\00\02\00\00\00\00\00\00\00@\1a\00\00#\00\00\00$\00\00\00&\00\00\00\00\00\00\00P\1a\00\00#\00\00\00%\00\00\00&\00\00\00\00\00\00\00"
-    "\80\1a\00\00\1e\00\00\00&\00\00\00 \00\00\00!\00\00\00\0e\00\00\00\00\00\00\00\a0\1a\00\00\1e\00\00\00'\00\00\00 \00\00\00!\00\00\00\0d\00\00\00\03\00\00\00\04\00\00\00\03\00\00\00"
+  (data $27 (i32.const 8268)
+    "\02\00\00\00\00\00\00\00\08\1a\00\00\1f\00\00\00 \00\00\00!\00\00\00\"\00\00\00\0d\00\00\00\01\00\00\00\02\00\00\00\01\00\00\00\00\00\00\000\1a\00\00\1f\00\00\00#\00\00\00!\00\00\00"
+    "\"\00\00\00\0d\00\00\00\02\00\00\00\03\00\00\00\02\00\00\00\00\00\00\00@\1a\00\00$\00\00\00%\00\00\00&\00\00\00\00\00\00\00P\1a\00\00$\00\00\00&\00\00\00&\00\00\00\00\00\00\00"
+    "\80\1a\00\00\1f\00\00\00'\00\00\00!\00\00\00\"\00\00\00\0e\00\00\00\00\00\00\00\a0\1a\00\00\1f\00\00\00(\00\00\00!\00\00\00\"\00\00\00\0d\00\00\00\03\00\00\00\04\00\00\00\03\00\00\00"
     "wasm_request_get_key\00wasm_request_set_key\00wasm_request_set_value"
     "\00onRequestHeaders \00 \00:path\00header path \00newheader\00newheadervalue"
     "\00server\00envoy-wasm\00onRequestBody \00Struct \00onLog \00onDone \0014Examp"
@@ -556,7 +557,7 @@
     local.set $6
     local.get $9
     local.tee $2
-    i32.const 8452
+    i32.const 8460
     i32.store
     local.get $2
     i32.const 20
@@ -607,7 +608,7 @@
     local.get $4
     if $if
       i32.const 0
-      i32.const 8473
+      i32.const 8481
       i32.const 20
       local.get $1
       i32.load
@@ -657,15 +658,15 @@
     i32.const 17
     i32.store offset=4
     local.get $4
-    i32.const 8517
+    i32.const 8525
     i64.load align=1
     i64.store align=1
     local.get $4
-    i32.const 8525
+    i32.const 8533
     i64.load align=1
     i64.store offset=8 align=1
     local.get $4
-    i32.const 8533
+    i32.const 8541
     i32.load8_s
     i32.store8 offset=16
     local.get $4
@@ -713,7 +714,7 @@
     i32.store offset=8
     local.get $3
     local.get $2
-    i32.const 8535
+    i32.const 8543
     call $__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc
     local.tee $0
     i64.load align=4
@@ -837,7 +838,7 @@
     local.get $3
     i32.const 0
     i32.store
-    i32.const 8537
+    i32.const 8545
     i32.const 5
     local.get $1
     local.get $3
@@ -874,11 +875,11 @@
     i32.const 12
     i32.store offset=4
     local.get $0
-    i32.const 8543
+    i32.const 8551
     i64.load align=1
     i64.store align=1
     local.get $0
-    i32.const 8551
+    i32.const 8559
     i32.load align=1
     i32.store offset=8 align=1
     local.get $0
@@ -1037,14 +1038,14 @@
       i32.load
       call $__ZdlPv
     end ;; $if_11
-    i32.const 8556
+    i32.const 8564
     i32.const 9
-    i32.const 8566
+    i32.const 8574
     i32.const 14
     call $_proxy_addRequestHeader
-    i32.const 8581
+    i32.const 8589
     i32.const 6
-    i32.const 8588
+    i32.const 8596
     i32.const 10
     call $_proxy_replaceRequestHeader
     local.get $6
@@ -1163,15 +1164,15 @@
     i32.const 14
     i32.store offset=4
     local.get $1
-    i32.const 8599
+    i32.const 8607
     i64.load align=1
     i64.store align=1
     local.get $1
-    i32.const 8607
+    i32.const 8615
     i32.load align=1
     i32.store offset=8 align=1
     local.get $1
-    i32.const 8611
+    i32.const 8619
     i32.load16_s align=1
     i32.store16 offset=12 align=1
     local.get $1
@@ -1368,15 +1369,15 @@
     i32.const 7
     i32.store8
     local.get $7
-    i32.const 8614
+    i32.const 8622
     i32.load align=1
     i32.store align=1
     local.get $7
-    i32.const 8618
+    i32.const 8626
     i32.load16_s align=1
     i32.store16 offset=4 align=1
     local.get $7
-    i32.const 8620
+    i32.const 8628
     i32.load8_s
     i32.store8 offset=6
     local.get $7
@@ -1400,15 +1401,15 @@
     i32.const 20
     i32.store offset=4
     local.get $0
-    i32.const 8452
+    i32.const 8460
     i64.load align=1
     i64.store align=1
     local.get $0
-    i32.const 8460
+    i32.const 8468
     i64.load align=1
     i64.store offset=8 align=1
     local.get $0
-    i32.const 8468
+    i32.const 8476
     i32.load align=1
     i32.store offset=16 align=1
     local.get $0
@@ -1463,7 +1464,7 @@
     i32.store offset=8
     local.get $3
     local.get $12
-    i32.const 8535
+    i32.const 8543
     call $__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc
     local.tee $0
     i64.load align=4
@@ -1496,15 +1497,15 @@
     i32.const 20
     i32.store offset=4
     local.get $0
-    i32.const 8452
+    i32.const 8460
     i64.load align=1
     i64.store align=1
     local.get $0
-    i32.const 8460
+    i32.const 8468
     i64.load align=1
     i64.store offset=8 align=1
     local.get $0
-    i32.const 8468
+    i32.const 8476
     i32.load align=1
     i32.store offset=16 align=1
     local.get $0
@@ -1702,13 +1703,13 @@
     end ;; $if
     local.get $2
     i32.const 3
-    i32.const 9251
+    i32.const 9259
     i32.const 1058
     call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
     local.get $2
-    i32.const 8851
+    i32.const 8859
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
-    i32.const 8879
+    i32.const 8887
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     local.get $1
     call $__ZN6google8protobuf8internal10LogMessagelsERKNSt3__212basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE
@@ -1764,7 +1765,7 @@
     local.tee $4
     i32.const 0
     i32.store
-    i32.const 8537
+    i32.const 8545
     i32.const 5
     local.get $3
     local.get $4
@@ -1791,7 +1792,7 @@
     call $__ZNSt3__29to_stringEj
     local.get $9
     local.get $10
-    i32.const 8622
+    i32.const 8630
     call $__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6insertEmPKc
     local.tee $0
     i64.load align=4
@@ -1808,7 +1809,7 @@
     i32.store offset=8
     local.get $4
     local.get $9
-    i32.const 8535
+    i32.const 8543
     call $__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc
     local.tee $0
     i64.load align=4
@@ -2039,7 +2040,7 @@
     call $__ZNSt3__29to_stringEj
     local.get $2
     local.get $1
-    i32.const 8629
+    i32.const 8637
     call $__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6insertEmPKc
     local.tee $0
     i64.load align=4
@@ -2107,7 +2108,7 @@
     (local $2 i32)
     (local $3 i32)
     local.get $0
-    i32.const 6912
+    i32.const 6916
     i32.store
     local.get $0
     i32.load offset=56
@@ -2473,7 +2474,7 @@
     i32.const 22
     i32.store offset=4
     local.get $2
-    i32.const 8494
+    i32.const 8502
     i32.const 22
     call $_memcpy
     drop
@@ -2552,11 +2553,11 @@
     if $if
       local.get $3
       i32.const 3
-      i32.const 8663
+      i32.const 8671
       i32.const 370
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 8712
+      i32.const 8720
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -2587,7 +2588,7 @@
     end ;; $if_1
     local.get $1
     i32.const 16
-    i32.const 40
+    i32.const 41
     call $__ZN6google8protobuf8internal9ArenaImpl28AllocateAlignedAndAddCleanupEmPFvPvE
     local.tee $1
     local.get $2
@@ -4237,11 +4238,11 @@
       local.tee $3
       call $__ZNSt11logic_errorC2EPKc
       local.get $3
-      i32.const 8372
+      i32.const 8380
       i32.store
       local.get $3
       i32.const 6736
-      i32.const 35
+      i32.const 36
       call $___cxa_throw
     end ;; $if_1
     local.get $1
@@ -5360,7 +5361,7 @@
       end ;; $if_1
       local.get $2
       i32.const 16
-      i32.const 41
+      i32.const 42
       call $__ZN6google8protobuf8internal9ArenaImpl28AllocateAlignedAndAddCleanupEmPFvPvE
       local.tee $1
       i64.const 0
@@ -5401,15 +5402,15 @@
     i32.const 0
     i32.store
     i32.const 16624
-    i32.const 7000
+    i32.const 7008
     i32.store
     i32.const 16648
     call $__ZN6google8protobuf6StructC2Ev
-    i32.const 42
+    i32.const 43
     i32.const 16648
     call $__ZN6google8protobuf8internal13OnShutdownRunEPFvPKvES3_
     i32.const 16680
-    i32.const 7088
+    i32.const 7096
     i32.store
     i32.const 16684
     i32.const 0
@@ -5417,7 +5418,7 @@
     i32.const 16696
     i32.const 0
     i32.store
-    i32.const 6976
+    i32.const 6984
     i32.load
     if $if
       call $__ZN6google8protobuf8internal11InitSCCImplEPNS1_11SCCInfoBaseE
@@ -5425,12 +5426,12 @@
     i32.const 16700
     i32.const 0
     i32.store
-    i32.const 42
+    i32.const 43
     i32.const 16680
     call $__ZN6google8protobuf8internal13OnShutdownRunEPFvPKvES3_
     i32.const 16736
     call $__ZN6google8protobuf9ListValueC2Ev
-    i32.const 42
+    i32.const 43
     i32.const 16736
     call $__ZN6google8protobuf8internal13OnShutdownRunEPFvPKvES3_
     i32.const 16632
@@ -5442,7 +5443,7 @@
     (param $0 i32)
     (local $1 i32)
     local.get $0
-    i32.const 7336
+    i32.const 7344
     i32.store
     local.get $0
     i32.const 4
@@ -5463,7 +5464,7 @@
     local.get $0
     i32.const 0
     i32.store offset=24
-    i32.const 6976
+    i32.const 6984
     i32.load
     i32.eqz
     if $if
@@ -5476,7 +5477,7 @@
     (param $0 i32)
     (local $1 i32)
     local.get $0
-    i32.const 7168
+    i32.const 7176
     i32.store
     local.get $0
     i32.const 4
@@ -5490,7 +5491,7 @@
     local.get $1
     i64.const 0
     i64.store offset=16 align=4
-    i32.const 6976
+    i32.const 6984
     i32.load
     i32.eqz
     if $if
@@ -5515,7 +5516,7 @@
     i32.add
     global.set $33
     local.get $0
-    i32.const 7168
+    i32.const 7176
     i32.store
     local.get $0
     i32.const 4
@@ -5542,11 +5543,11 @@
     if $if_0
       local.get $2
       i32.const 3
-      i32.const 9066
+      i32.const 9074
       i32.const 871
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $2
-      i32.const 10246
+      i32.const 10254
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $2
@@ -5686,19 +5687,19 @@
     i32.const 25
     i32.store offset=4
     local.get $2
-    i32.const 11533
+    i32.const 11541
     i64.load align=1
     i64.store align=1
     local.get $2
-    i32.const 11541
+    i32.const 11549
     i64.load align=1
     i64.store offset=8 align=1
     local.get $2
-    i32.const 11549
+    i32.const 11557
     i64.load align=1
     i64.store offset=16 align=1
     local.get $2
-    i32.const 11557
+    i32.const 11565
     i32.load8_s
     i32.store8 offset=24
     local.get $2
@@ -5814,10 +5815,10 @@
       local.get $1
       call $__ZN6google8protobuf9ListValue9MergeFromERKS1_
     else
-      i32.const 11099
-      i32.const 11140
+      i32.const 11107
+      i32.const 11148
       i32.const 92
-      i32.const 11189
+      i32.const 11197
       call $___assert_fail
     end ;; $if
     )
@@ -6441,11 +6442,11 @@
     if $if
       local.get $3
       i32.const 3
-      i32.const 9126
+      i32.const 9134
       i32.const 1505
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 9178
+      i32.const 9186
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -6477,11 +6478,11 @@
     local.set $3
     local.get $2
     i32.const 3
-    i32.const 9126
+    i32.const 9134
     i32.const 1506
     call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
     local.get $2
-    i32.const 9209
+    i32.const 9217
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
     local.get $2
@@ -6915,7 +6916,7 @@
         i32.const 0
         i32.store offset=8
         local.get $2
-        i32.const 7248
+        i32.const 7256
         i32.store
         local.get $2
         local.get $6
@@ -7165,11 +7166,11 @@
       else
         local.get $4
         i32.const 3
-        i32.const 9251
+        i32.const 9259
         i32.const 418
         call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
         local.get $4
-        i32.const 9335
+        i32.const 9343
         call $__ZN6google8protobuf8internal10LogMessagelsEPKc
         call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
         local.get $4
@@ -7260,11 +7261,11 @@
     if $if_4
       local.get $2
       i32.const 3
-      i32.const 9251
+      i32.const 9259
       i32.const 427
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $2
-      i32.const 9452
+      i32.const 9460
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $2
@@ -7342,11 +7343,11 @@
       if $if_1
         local.get $3
         i32.const 3
-        i32.const 9251
+        i32.const 9259
         i32.const 451
         call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
         local.get $3
-        i32.const 9292
+        i32.const 9300
         call $__ZN6google8protobuf8internal10LogMessagelsEPKc
         call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
         local.get $3
@@ -7487,11 +7488,11 @@
       end ;; $block_0
       local.get $3
       i32.const 3
-      i32.const 9251
+      i32.const 9259
       i32.const 476
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 9483
+      i32.const 9491
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -7618,7 +7619,7 @@
     (param $0 i32)
     (local $1 i32)
     local.get $0
-    i32.const 7416
+    i32.const 7424
     i32.store
     local.get $0
     i32.load offset=12
@@ -7672,7 +7673,7 @@
     (local $1 i32)
     (local $2 i32)
     local.get $0
-    i32.const 7416
+    i32.const 7424
     i32.store
     local.get $0
     i32.load offset=12
@@ -7757,7 +7758,7 @@
     i32.const 0
     i32.store offset=16
     local.get $1
-    i32.const 7000
+    i32.const 7008
     i32.store
     local.get $1
     )
@@ -7877,10 +7878,10 @@
       local.get $1
       call $__ZN6google8protobuf8internal12MapEntryImplINS0_27Struct_FieldsEntry_DoNotUseENS0_11MessageLiteENSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEENS0_5ValueELNS1_14WireFormatLite9FieldTypeE9ELSE_11ELi0EE17MergeFromInternalERKSF_
     else
-      i32.const 11099
-      i32.const 11140
+      i32.const 11107
+      i32.const 11148
       i32.const 92
-      i32.const 11189
+      i32.const 11197
       call $___assert_fail
     end ;; $if
     )
@@ -8530,7 +8531,7 @@
       i32.const 24
       call $__ZN6google8protobuf8internal9ArenaImpl15AllocateAlignedEm
       local.tee $1
-      i32.const 7088
+      i32.const 7096
       i32.store
       local.get $1
       local.get $0
@@ -8538,7 +8539,7 @@
       local.get $1
       i32.const 0
       i32.store offset=16
-      i32.const 6976
+      i32.const 6984
       i32.load
       if $if_1
         call $__ZN6google8protobuf8internal11InitSCCImplEPNS1_11SCCInfoBaseE
@@ -8549,7 +8550,7 @@
       i32.const 24
       call $__Znwm
       local.tee $0
-      i32.const 7088
+      i32.const 7096
       i32.store
       local.get $0
       i32.const 0
@@ -8557,7 +8558,7 @@
       local.get $0
       i32.const 0
       i32.store offset=16
-      i32.const 6976
+      i32.const 6984
       i32.load
       if $if_2
         call $__ZN6google8protobuf8internal11InitSCCImplEPNS1_11SCCInfoBaseE
@@ -8974,7 +8975,7 @@
                             i32.and
                           end ;; $if_13
                           i32.const 0
-                          i32.const 9527
+                          i32.const 9535
                           call $__ZN6google8protobuf8internal14WireFormatLite16VerifyUtf8StringEPKciNS2_9OperationES4_
                           br_if $loop
                           i32.const 0
@@ -9763,7 +9764,7 @@
                     local.get $5
                     select
                     i32.const 0
-                    i32.const 9562
+                    i32.const 9570
                     call $__ZN6google8protobuf8internal14WireFormatLite16VerifyUtf8StringEPKciNS2_9OperationES4_
                     select
                     br $block_4
@@ -9945,7 +9946,7 @@
     (param $1 i32)
     (local $2 i32)
     local.get $0
-    i32.const 7168
+    i32.const 7176
     i32.store
     local.get $0
     local.get $1
@@ -9962,7 +9963,7 @@
     local.get $2
     i64.const 0
     i64.store offset=8 align=4
-    i32.const 6976
+    i32.const 6984
     i32.load
     i32.eqz
     if $if
@@ -10288,7 +10289,7 @@
       i32.const 0
       i32.store offset=16
       local.get $2
-      i32.const 7000
+      i32.const 7008
       i32.store
     end ;; $if_9
     local.get $0
@@ -10654,7 +10655,7 @@
       i32.const 0
       i32.store offset=16
       local.get $2
-      i32.const 7000
+      i32.const 7008
       i32.store
     end ;; $if
     local.get $0
@@ -10929,7 +10930,7 @@
     i32.const 0
     i32.store offset=16
     local.get $0
-    i32.const 7000
+    i32.const 7008
     i32.store
     local.get $0
     )
@@ -11309,11 +11310,11 @@
     if $if
       local.get $3
       i32.const 3
-      i32.const 9066
+      i32.const 9074
       i32.const 763
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 9601
+      i32.const 9609
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -11660,11 +11661,11 @@
     if $if
       local.get $4
       i32.const 3
-      i32.const 9066
+      i32.const 9074
       i32.const 326
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $4
-      i32.const 9601
+      i32.const 9609
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $4
@@ -11855,11 +11856,11 @@
     if $if
       local.get $3
       i32.const 3
-      i32.const 9066
+      i32.const 9074
       i32.const 993
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 9601
+      i32.const 9609
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -11960,11 +11961,11 @@
     if $if
       local.get $2
       i32.const 3
-      i32.const 9126
+      i32.const 9134
       i32.const 1586
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $2
-      i32.const 9635
+      i32.const 9643
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $2
@@ -12117,7 +12118,7 @@
     i32.const 16
     i32.add
     local.tee $1
-    i32.const 7088
+    i32.const 7096
     i32.store
     local.get $1
     call $__ZN6google8protobuf5Value10SharedDtorEv
@@ -12207,11 +12208,11 @@
     if $if
       local.get $3
       i32.const 3
-      i32.const 9251
+      i32.const 9259
       i32.const 601
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 10132
+      i32.const 10140
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -12283,11 +12284,11 @@
         end ;; $block_0
         local.get $5
         i32.const 3
-        i32.const 9251
+        i32.const 9259
         i32.const 607
         call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
         local.get $5
-        i32.const 10166
+        i32.const 10174
         call $__ZN6google8protobuf8internal10LogMessagelsEPKc
         call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
         local.get $5
@@ -12328,11 +12329,11 @@
         end ;; $block_2
         local.get $3
         i32.const 3
-        i32.const 9251
+        i32.const 9259
         i32.const 612
         call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
         local.get $3
-        i32.const 10210
+        i32.const 10218
         call $__ZN6google8protobuf8internal10LogMessagelsEPKc
         call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
         local.get $3
@@ -13480,11 +13481,11 @@
     if $if_0
       local.get $1
       i32.const 3
-      i32.const 9066
+      i32.const 9074
       i32.const 468
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $1
-      i32.const 10246
+      i32.const 10254
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $1
@@ -13733,7 +13734,7 @@
       local.get $1
       call $__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC2ERKS5_
       local.get $0
-      i32.const 7088
+      i32.const 7096
       i32.store offset=16
       local.get $0
       i32.const 0
@@ -13741,7 +13742,7 @@
       local.get $0
       i32.const 0
       i32.store offset=32
-      i32.const 6976
+      i32.const 6984
       i32.load
       if $if_0
         call $__ZN6google8protobuf8internal11InitSCCImplEPNS1_11SCCInfoBaseE
@@ -13780,7 +13781,7 @@
     i32.load
     local.set $0
     local.get $2
-    i32.const 7088
+    i32.const 7096
     i32.store offset=16
     local.get $2
     local.get $0
@@ -13788,7 +13789,7 @@
     local.get $2
     i32.const 0
     i32.store offset=32
-    i32.const 6976
+    i32.const 6984
     i32.load
     if $if_2
       call $__ZN6google8protobuf8internal11InitSCCImplEPNS1_11SCCInfoBaseE
@@ -13847,11 +13848,11 @@
     if $if
       local.get $3
       i32.const 3
-      i32.const 9251
+      i32.const 9259
       i32.const 765
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 10716
+      i32.const 10724
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -14071,11 +14072,11 @@
       if $if_0
         local.get $8
         i32.const 3
-        i32.const 9251
+        i32.const 9259
         i32.const 672
         call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
         local.get $8
-        i32.const 10290
+        i32.const 10298
         call $__ZN6google8protobuf8internal10LogMessagelsEPKc
         call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
         local.get $8
@@ -14111,11 +14112,11 @@
     if $if_1
       local.get $6
       i32.const 3
-      i32.const 9251
+      i32.const 9259
       i32.const 678
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $6
-      i32.const 10391
+      i32.const 10399
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $6
@@ -14195,11 +14196,11 @@
       else
         local.get $7
         i32.const 3
-        i32.const 9251
+        i32.const 9259
         i32.const 878
         call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
         local.get $7
-        i32.const 10447
+        i32.const 10455
         call $__ZN6google8protobuf8internal10LogMessagelsEPKc
         call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
         local.get $7
@@ -14229,11 +14230,11 @@
       if $if_6
         local.get $4
         i32.const 3
-        i32.const 9251
+        i32.const 9259
         i32.const 685
         call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
         local.get $4
-        i32.const 10487
+        i32.const 10495
         call $__ZN6google8protobuf8internal10LogMessagelsEPKc
         call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
         local.get $4
@@ -14361,11 +14362,11 @@
       end ;; $block_0
       local.get $10
       i32.const 3
-      i32.const 9251
+      i32.const 9259
       i32.const 837
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $10
-      i32.const 10609
+      i32.const 10617
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $10
@@ -14634,11 +14635,11 @@
     end ;; $if_8
     local.get $12
     i32.const 3
-    i32.const 9251
+    i32.const 9259
     i32.const 848
     call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
     local.get $12
-    i32.const 10674
+    i32.const 10682
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
     local.get $12
@@ -14707,11 +14708,11 @@
     if $if
       local.get $4
       i32.const 3
-      i32.const 9251
+      i32.const 9259
       i32.const 713
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $4
-      i32.const 10562
+      i32.const 10570
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $4
@@ -16033,11 +16034,11 @@
     if $if
       local.get $4
       i32.const 3
-      i32.const 9251
+      i32.const 9259
       i32.const 926
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $4
-      i32.const 10769
+      i32.const 10777
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $4
@@ -16055,11 +16056,11 @@
     if $if_0
       local.get $2
       i32.const 3
-      i32.const 9251
+      i32.const 9259
       i32.const 927
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $2
-      i32.const 10804
+      i32.const 10812
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $2
@@ -16291,7 +16292,7 @@
     (param $1 i32)
     (local $2 i32)
     local.get $0
-    i32.const 7336
+    i32.const 7344
     i32.store
     local.get $0
     local.get $1
@@ -16319,7 +16320,7 @@
     local.get $0
     i32.const 0
     i32.store offset=24
-    i32.const 6976
+    i32.const 6984
     i32.load
     i32.eqz
     if $if
@@ -16383,7 +16384,7 @@
     end ;; $if_0
     local.get $1
     i32.const 24
-    i32.const 43
+    i32.const 44
     call $__ZN6google8protobuf8internal9ArenaImpl28AllocateAlignedAndAddCleanupEmPFvPvE
     local.tee $1
     i32.const 0
@@ -16699,11 +16700,11 @@
           if $if_4
             local.get $7
             i32.const 3
-            i32.const 9251
+            i32.const 9259
             i32.const 527
             call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
             local.get $7
-            i32.const 10841
+            i32.const 10849
             call $__ZN6google8protobuf8internal10LogMessagelsEPKc
             call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
             local.get $7
@@ -16965,7 +16966,7 @@
     i32.add
     global.set $33
     local.get $0
-    i32.const 7336
+    i32.const 7344
     i32.store
     local.get $0
     i32.const 4
@@ -16992,11 +16993,11 @@
     if $if_0
       local.get $1
       i32.const 3
-      i32.const 9066
+      i32.const 9074
       i32.const 140
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $1
-      i32.const 10246
+      i32.const 10254
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $1
@@ -17079,19 +17080,19 @@
     i32.const 22
     i32.store offset=4
     local.get $2
-    i32.const 11199
+    i32.const 11207
     i64.load align=1
     i64.store align=1
     local.get $2
-    i32.const 11207
+    i32.const 11215
     i64.load align=1
     i64.store offset=8 align=1
     local.get $2
-    i32.const 11215
+    i32.const 11223
     i32.load align=1
     i32.store offset=16 align=1
     local.get $2
-    i32.const 11219
+    i32.const 11227
     i32.load16_s align=1
     i32.store16 offset=20 align=1
     local.get $2
@@ -17173,10 +17174,10 @@
       local.get $1
       call $__ZN6google8protobuf6Struct9MergeFromERKS1_
     else
-      i32.const 11099
-      i32.const 11140
+      i32.const 11107
+      i32.const 11148
       i32.const 92
-      i32.const 11189
+      i32.const 11197
       call $___assert_fail
     end ;; $if
     )
@@ -17293,7 +17294,7 @@
             i32.const 0
             i32.store offset=8
             local.get $2
-            i32.const 7248
+            i32.const 7256
             i32.store
             local.get $2
             local.get $6
@@ -17362,7 +17363,7 @@
             local.get $4
             local.get $2
             i32.const 1
-            i32.const 9562
+            i32.const 9570
             call $__ZN6google8protobuf8internal14WireFormatLite16VerifyUtf8StringEPKciNS2_9OperationES4_
             drop
             local.get $5
@@ -17521,7 +17522,7 @@
             i32.const 0
             i32.store offset=8
             local.get $2
-            i32.const 7248
+            i32.const 7256
             i32.store
             local.get $2
             local.get $9
@@ -17589,7 +17590,7 @@
             local.get $6
             local.get $2
             i32.const 1
-            i32.const 9562
+            i32.const 9570
             call $__ZN6google8protobuf8internal14WireFormatLite16VerifyUtf8StringEPKciNS2_9OperationES4_
             drop
             local.get $4
@@ -20868,11 +20869,11 @@
     if $if
       local.get $2
       i32.const 3
-      i32.const 9126
+      i32.const 9134
       i32.const 1567
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $2
-      i32.const 11506
+      i32.const 11514
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $2
@@ -20964,7 +20965,7 @@
     (local $1 i32)
     (local $2 i32)
     local.get $0
-    i32.const 7088
+    i32.const 7096
     i32.store
     local.get $0
     call $__ZN6google8protobuf5Value10SharedDtorEv
@@ -21020,7 +21021,7 @@
     (local $1 i32)
     (local $2 i32)
     local.get $0
-    i32.const 7088
+    i32.const 7096
     i32.store
     local.get $0
     call $__ZN6google8protobuf5Value10SharedDtorEv
@@ -21087,19 +21088,19 @@
     i32.const 21
     i32.store offset=4
     local.get $2
-    i32.const 11588
+    i32.const 11596
     i64.load align=1
     i64.store align=1
     local.get $2
-    i32.const 11596
+    i32.const 11604
     i64.load align=1
     i64.store offset=8 align=1
     local.get $2
-    i32.const 11604
+    i32.const 11612
     i32.load align=1
     i32.store offset=16 align=1
     local.get $2
-    i32.const 11608
+    i32.const 11616
     i32.load8_s
     i32.store8 offset=20
     local.get $2
@@ -21179,10 +21180,10 @@
       local.get $1
       call $__ZN6google8protobuf5Value9MergeFromERKS1_
     else
-      i32.const 11099
-      i32.const 11140
+      i32.const 11107
+      i32.const 11148
       i32.const 92
-      i32.const 11189
+      i32.const 11197
       call $___assert_fail
     end ;; $if
     )
@@ -21255,7 +21256,7 @@
       local.get $4
       local.get $2
       i32.const 1
-      i32.const 9527
+      i32.const 9535
       call $__ZN6google8protobuf8internal14WireFormatLite16VerifyUtf8StringEPKciNS2_9OperationES4_
       drop
       local.get $3
@@ -21378,7 +21379,7 @@
     (local $3 i32)
     (local $4 i32)
     local.get $0
-    i32.const 7336
+    i32.const 7344
     i32.store
     local.get $0
     i32.const 8
@@ -22142,7 +22143,7 @@
   (func $__ZN6google8protobuf5ValueC2Ev (type $1)
     (param $0 i32)
     local.get $0
-    i32.const 7088
+    i32.const 7096
     i32.store
     local.get $0
     i32.const 0
@@ -22150,7 +22151,7 @@
     local.get $0
     i32.const 0
     i32.store offset=16
-    i32.const 6976
+    i32.const 6984
     i32.load
     i32.eqz
     if $if
@@ -22890,7 +22891,7 @@
       br_if $block
       local.get $0
       i32.load
-      i32.load offset=56
+      i32.load offset=60
       local.set $12
       i32.const 8
       call $__Znwm
@@ -24066,6 +24067,24 @@
     call_indirect $26 (type $1)
     )
   
+  (func $_proxy_onTick (type $6)
+    (local $0 i32)
+    (local $1 i32)
+    i32.const 0
+    call $__ZL13ensureContextj
+    local.tee $0
+    i32.load
+    i32.load offset=56
+    local.set $1
+    local.get $0
+    local.get $1
+    i32.const 63
+    i32.and
+    i32.const 108
+    i32.add
+    call_indirect $26 (type $1)
+    )
+  
   (func $__ZL13ensureContextj (type $0)
     (param $0 i32)
     (result i32)
@@ -24646,11 +24665,11 @@
       local.tee $3
       call $__ZNSt11logic_errorC2EPKc
       local.get $3
-      i32.const 8372
+      i32.const 8380
       i32.store
       local.get $3
       i32.const 6736
-      i32.const 35
+      i32.const 36
       call $___cxa_throw
     end ;; $if_1
     local.get $1
@@ -25299,7 +25318,7 @@
     (param $0 i32)
     (local $1 i32)
     local.get $0
-    i32.const 7504
+    i32.const 7512
     i32.store
     local.get $0
     i32.const 12
@@ -25320,7 +25339,7 @@
     (param $0 i32)
     (local $1 i32)
     local.get $0
-    i32.const 7504
+    i32.const 7512
     i32.store
     local.get $0
     i32.const 12
@@ -25450,7 +25469,7 @@
       call $__ZN6google8protobuf14FatalExceptionC2EPKciRKNSt3__212basic_stringIcNS4_11char_traitsIcEENS4_9allocatorIcEEEE
       local.get $1
       i32.const 6576
-      i32.const 25
+      i32.const 26
       call $___cxa_throw
     else
       local.get $1
@@ -25477,7 +25496,7 @@
     i32.const 16832
     local.get $0
     i32.store
-    i32.const 45
+    i32.const 46
     i32.const 4
     call $__ZN6google8protobuf8internal13OnShutdownRunEPFvPKvES3_
     )
@@ -25504,7 +25523,7 @@
     (param $2 i32)
     (param $3 i32)
     local.get $0
-    i32.const 7504
+    i32.const 7512
     i32.store
     local.get $0
     local.get $1
@@ -25540,7 +25559,7 @@
       global.set $33
       return
     end ;; $if
-    i32.const 7636
+    i32.const 7644
     i32.load
     local.set $5
     local.get $3
@@ -25759,11 +25778,11 @@
         local.tee $3
         call $__ZNSt11logic_errorC2EPKc
         local.get $3
-        i32.const 8372
+        i32.const 8380
         i32.store
         local.get $3
         i32.const 6736
-        i32.const 35
+        i32.const 36
         call $___cxa_throw
       else
         local.get $2
@@ -25887,7 +25906,7 @@
     i32.store
     local.get $2
     i32.const 128
-    i32.const 12476
+    i32.const 12484
     local.get $3
     call $_snprintf
     drop
@@ -25925,7 +25944,7 @@
     i32.store
     local.get $2
     i32.const 128
-    i32.const 14921
+    i32.const 14929
     local.get $3
     call $_snprintf
     drop
@@ -25963,7 +25982,7 @@
     i32.store
     local.get $2
     i32.const 128
-    i32.const 12479
+    i32.const 12487
     local.get $3
     call $_snprintf
     drop
@@ -26284,11 +26303,11 @@
     if $if_0
       local.get $4
       i32.const 3
-      i32.const 12483
+      i32.const 12491
       i32.const 116
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $4
-      i32.const 12508
+      i32.const 12516
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $4
@@ -27032,7 +27051,7 @@
         end ;; $if_0
         local.get $0
         local.get $1
-        i32.const 40
+        i32.const 41
         call $__ZN6google8protobuf8internal9ArenaImpl18AddCleanupFallbackEPvPFvS3_E
         return
       end ;; $block
@@ -27049,14 +27068,14 @@
     if $if_1
       local.get $2
       local.get $1
-      i32.const 40
+      i32.const 41
       call $__ZN6google8protobuf8internal9ArenaImpl11SerialArena18AddCleanupFallbackEPvPFvS4_E
     else
       local.get $0
       local.get $1
       i32.store
       local.get $0
-      i32.const 40
+      i32.const 41
       i32.store offset=4
       local.get $3
       local.get $0
@@ -37475,11 +37494,11 @@
         end ;; $block_0
         local.get $14
         i32.const 3
-        i32.const 12595
+        i32.const 12603
         i32.const 571
         call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
         local.get $14
-        i32.const 12637
+        i32.const 12645
         call $__ZN6google8protobuf8internal10LogMessagelsEPKc
         local.get $4
         call $__ZN6google8protobuf8internal10LogMessagelsEi
@@ -37514,16 +37533,16 @@
     global.set $33
     local.get $1
     i32.const 3
-    i32.const 12595
+    i32.const 12603
     i32.const 534
     call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
     local.get $1
-    i32.const 12637
+    i32.const 12645
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     local.get $0
     i32.load offset=4
     call $__ZN6google8protobuf8internal10LogMessagelsEj
-    i32.const 12667
+    i32.const 12675
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     local.get $0
     i32.load offset=12
@@ -37559,7 +37578,7 @@
     local.get $1
     call $_pthread_equal
     if $if_0
-      i32.const 6976
+      i32.const 6984
       i32.load
       i32.const 1
       i32.eq
@@ -37570,11 +37589,11 @@
       end ;; $if_1
       local.get $0
       i32.const 3
-      i32.const 12595
+      i32.const 12603
       i32.const 801
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $0
-      i32.const 12679
+      i32.const 12687
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $0
@@ -37596,7 +37615,7 @@
         i32.const 16784
         i32.const 0
         i32.store
-        i32.const 46
+        i32.const 47
         i32.const 16776
         call $__ZN6google8protobuf8internal13OnShutdownRunEPFvPKvES3_
       end ;; $if_3
@@ -37606,7 +37625,7 @@
     i32.const 16916
     local.get $1
     i32.store
-    i32.const 6976
+    i32.const 6984
     call $__ZN6google8protobuf8internal12_GLOBAL__N_111InitSCC_DFSEPNS1_11SCCInfoBaseE
     i32.const 16916
     i32.const 0
@@ -37707,31 +37726,31 @@
     i32.const 50
     i32.store offset=4
     local.get $2
-    i32.const 12844
+    i32.const 12852
     i64.load align=1
     i64.store align=1
     local.get $2
-    i32.const 12852
+    i32.const 12860
     i64.load align=1
     i64.store offset=8 align=1
     local.get $2
-    i32.const 12860
+    i32.const 12868
     i64.load align=1
     i64.store offset=16 align=1
     local.get $2
-    i32.const 12868
+    i32.const 12876
     i64.load align=1
     i64.store offset=24 align=1
     local.get $2
-    i32.const 12876
+    i32.const 12884
     i64.load align=1
     i64.store offset=32 align=1
     local.get $2
-    i32.const 12884
+    i32.const 12892
     i64.load align=1
     i64.store offset=40 align=1
     local.get $2
-    i32.const 12892
+    i32.const 12900
     i32.load16_s align=1
     i32.store16 offset=48 align=1
     local.get $2
@@ -37861,11 +37880,11 @@
     if $if_0
       local.get $3
       i32.const 3
-      i32.const 12774
+      i32.const 12782
       i32.const 373
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 12806
+      i32.const 12814
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -38007,7 +38026,7 @@
       end ;; $if_0
       local.get $6
       i32.const 2
-      i32.const 12774
+      i32.const 12782
       i32.const 121
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $5
@@ -38017,15 +38036,15 @@
       i32.const 0
       i32.store offset=8
       local.get $5
-      i32.const 12933
+      i32.const 12941
       call $__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc
       drop
       local.get $5
-      i32.const 12927
+      i32.const 12935
       call $__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc
       drop
       local.get $5
-      i32.const 12940
+      i32.const 12948
       call $__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc
       drop
       local.get $0
@@ -38073,7 +38092,7 @@
         call $__ZdlPv
       end ;; $if_1
       local.get $5
-      i32.const 12959
+      i32.const 12967
       call $__ZNSt3__212basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6appendEPKc
       drop
       local.get $0
@@ -38177,11 +38196,11 @@
     if $if
       local.get $6
       i32.const 3
-      i32.const 12774
+      i32.const 12782
       i32.const 68
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $6
-      i32.const 13041
+      i32.const 13049
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       local.set $1
       local.get $3
@@ -38199,7 +38218,7 @@
       local.get $1
       local.get $5
       call $__ZN6google8protobuf8internal10LogMessagelsERKNSt3__212basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE
-      i32.const 13125
+      i32.const 13133
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $5
@@ -38224,11 +38243,11 @@
     if $if_1
       local.get $4
       i32.const 3
-      i32.const 12774
+      i32.const 12782
       i32.const 75
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $4
-      i32.const 13415
+      i32.const 13423
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $4
@@ -38246,13 +38265,13 @@
     i32.add
     local.tee $0
     i32.const 3
-    i32.const 12774
+    i32.const 12782
     i32.const 71
     call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
     local.get $0
-    i32.const 13174
+    i32.const 13182
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
-    i32.const 13260
+    i32.const 13268
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     local.set $6
     local.get $3
@@ -38270,7 +38289,7 @@
     local.get $6
     local.get $5
     call $__ZN6google8protobuf8internal10LogMessagelsERKNSt3__212basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE
-    i32.const 14901
+    i32.const 14909
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
     local.get $5
@@ -38286,11 +38305,11 @@
     call $__ZN6google8protobuf8internal10LogMessageD2Ev
     local.get $4
     i32.const 3
-    i32.const 12774
+    i32.const 12782
     i32.const 75
     call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
     local.get $4
-    i32.const 13415
+    i32.const 13423
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
     local.get $4
@@ -38351,11 +38370,11 @@
     if $if_0
       local.get $2
       i32.const 2
-      i32.const 12774
+      i32.const 12782
       i32.const 289
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $2
-      i32.const 13001
+      i32.const 13009
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       local.get $4
       call $__ZN6google8protobuf8internal10LogMessagelsEm
@@ -38537,13 +38556,13 @@
     if $if_0
       local.get $3
       i32.const 3
-      i32.const 13468
+      i32.const 13476
       i32.const 59
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 13502
+      i32.const 13510
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
-      i32.const 13619
+      i32.const 13627
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -40365,11 +40384,11 @@
           if $if_1
             local.get $4
             i32.const 3
-            i32.const 13667
+            i32.const 13675
             i32.const 507
             call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
             local.get $4
-            i32.const 13703
+            i32.const 13711
             call $__ZN6google8protobuf8internal10LogMessagelsEPKc
             call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
             local.get $4
@@ -40586,11 +40605,11 @@
           if $if_1
             local.get $7
             i32.const 3
-            i32.const 13667
+            i32.const 13675
             i32.const 516
             call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
             local.get $7
-            i32.const 13703
+            i32.const 13711
             call $__ZN6google8protobuf8internal10LogMessagelsEPKc
             call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
             local.get $7
@@ -41310,37 +41329,37 @@
       i32.load offset=8
       i32.store offset=8
     end ;; $if_0
-    i32.const 13749
+    i32.const 13757
     i32.const 0
     local.get $2
     i32.const 1
     i32.eq
     select
-    i32.const 13761
+    i32.const 13769
     local.get $2
     select
     local.set $1
     local.get $7
     i32.const 2
-    i32.const 13667
+    i32.const 13675
     i32.const 626
     call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
     local.get $7
-    i32.const 13775
+    i32.const 13783
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     local.get $4
     call $__ZN6google8protobuf8internal10LogMessagelsERKNSt3__212basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEE
-    i32.const 13788
+    i32.const 13796
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
-    i32.const 13807
+    i32.const 13815
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     local.get $1
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
-    i32.const 13824
+    i32.const 13832
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
-    i32.const 13837
+    i32.const 13845
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
-    i32.const 13893
+    i32.const 13901
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
     local.get $7
@@ -42235,11 +42254,11 @@
               if $if_2
                 local.get $2
                 i32.const 3
-                i32.const 13901
+                i32.const 13909
                 i32.const 591
                 call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
                 local.get $2
-                i32.const 13936
+                i32.const 13944
                 call $__ZN6google8protobuf8internal10LogMessagelsEPKc
                 call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
                 local.get $2
@@ -42385,16 +42404,16 @@
     local.set $2
     local.get $1
     i32.const 2
-    i32.const 13901
+    i32.const 13909
     i32.const 190
     call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
     local.get $1
-    i32.const 13973
+    i32.const 13981
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     local.get $0
     i32.load offset=36
     call $__ZN6google8protobuf8internal10LogMessagelsEi
-    i32.const 14040
+    i32.const 14048
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
     local.get $1
@@ -45030,13 +45049,13 @@
     if $if
       local.get $3
       i32.const 3
-      i32.const 14185
+      i32.const 14193
       i32.const 132
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 14265
+      i32.const 14273
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
-      i32.const 14309
+      i32.const 14317
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -45059,11 +45078,11 @@
     if $if_0
       local.get $3
       i32.const 3
-      i32.const 14185
+      i32.const 14193
       i32.const 134
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 14364
+      i32.const 14372
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -45097,11 +45116,11 @@
     local.set $4
     local.get $2
     i32.const 3
-    i32.const 14185
+    i32.const 14193
     i32.const 135
     call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
     local.get $2
-    i32.const 14234
+    i32.const 14242
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
     local.get $2
@@ -45167,11 +45186,11 @@
     if $if
       local.get $3
       i32.const 3
-      i32.const 14185
+      i32.const 14193
       i32.const 151
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 14454
+      i32.const 14462
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -45245,13 +45264,13 @@
         end ;; $if_3
         local.get $4
         i32.const 2
-        i32.const 14185
+        i32.const 14193
         i32.const 164
         call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
         local.get $4
-        i32.const 14531
+        i32.const 14539
         call $__ZN6google8protobuf8internal10LogMessagelsEPKc
-        i32.const 14581
+        i32.const 14589
         call $__ZN6google8protobuf8internal10LogMessagelsEPKc
         call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
         local.get $4
@@ -45329,11 +45348,11 @@
     if $if
       local.get $2
       i32.const 3
-      i32.const 14185
+      i32.const 14193
       i32.const 182
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $2
-      i32.const 14234
+      i32.const 14242
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $2
@@ -45357,11 +45376,11 @@
     if $if_0
       local.get $2
       i32.const 3
-      i32.const 14185
+      i32.const 14193
       i32.const 183
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $2
-      i32.const 14454
+      i32.const 14462
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $2
@@ -45392,11 +45411,11 @@
     if $if_2
       local.get $3
       i32.const 3
-      i32.const 14185
+      i32.const 14193
       i32.const 184
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $3
-      i32.const 14486
+      i32.const 14494
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $3
@@ -45461,11 +45480,11 @@
     if $if
       local.get $1
       i32.const 3
-      i32.const 14185
+      i32.const 14193
       i32.const 189
       call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
       local.get $1
-      i32.const 14454
+      i32.const 14462
       call $__ZN6google8protobuf8internal10LogMessagelsEPKc
       call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
       local.get $1
@@ -45502,7 +45521,7 @@
     (param $1 i32)
     (param $2 i32)
     local.get $0
-    i32.const 7524
+    i32.const 7532
     i32.store
     local.get $0
     local.get $1
@@ -45525,7 +45544,7 @@
     (param $0 i32)
     (param $1 i32)
     local.get $0
-    i32.const 7560
+    i32.const 7568
     i32.store
     local.get $0
     local.get $1
@@ -45633,7 +45652,7 @@
     i32.const 0
     i32.store offset=8
     local.get $0
-    i32.const 13769
+    i32.const 13777
     local.get $2
     call $__ZN6google8protobuf13StringAppendVEPNSt3__212basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEEPKcPi
     local.get $2
@@ -45666,7 +45685,7 @@
       i32.const 241
       return
     end ;; $if
-    i32.const 7604
+    i32.const 7612
     i32.load
     local.set $13
     local.get $0
@@ -45676,18 +45695,18 @@
     i32.const -7
     i32.add
     local.set $10
-    i32.const 7632
+    i32.const 7640
     i32.load
     local.set $4
-    i32.const 7612
-    i32.load
-    local.set $11
-    i32.const 7616
-    i32.load
-    local.set $12
     i32.const 7620
     i32.load
-    i32.const 7588
+    local.set $11
+    i32.const 7624
+    i32.load
+    local.set $12
+    i32.const 7628
+    i32.load
+    i32.const 7596
     i32.load
     i32.add
     local.tee $8
@@ -45900,7 +45919,7 @@
           local.get $1
           local.get $14
           i32.sub
-          i32.const 7592
+          i32.const 7600
           i32.load
           i32.ge_u
           if $if_7
@@ -45932,7 +45951,7 @@
       local.get $1
       local.get $8
       i32.sub
-      i32.const 7592
+      i32.const 7600
       i32.load
       i32.lt_u
       if $if_9 (result i32)
@@ -46138,11 +46157,11 @@
     local.set $1
     local.get $0
     i32.const 3
-    i32.const 14643
+    i32.const 14651
     i32.const 47
     call $__ZN6google8protobuf8internal10LogMessageC2ENS0_8LogLevelEPKci
     local.get $0
-    i32.const 14682
+    i32.const 14690
     call $__ZN6google8protobuf8internal10LogMessagelsEPKc
     call $__ZN6google8protobuf8internal11LogFinisheraSERNS1_10LogMessageE
     local.get $0
@@ -46720,69 +46739,69 @@
     i32.add
     local.set $5
     local.get $4
-    i32.const 7892
+    i32.const 7900
     i64.load align=4
     i64.store align=4
     local.get $4
-    i32.const 7900
+    i32.const 7908
     i64.load align=4
     i64.store offset=8 align=4
     local.get $4
-    i32.const 7908
+    i32.const 7916
     i64.load align=4
     i64.store offset=16 align=4
     local.get $4
-    i32.const 7916
+    i32.const 7924
     i64.load align=4
     i64.store offset=24 align=4
     local.get $4
-    i32.const 7924
+    i32.const 7932
     i64.load align=4
     i64.store offset=32 align=4
     local.get $4
-    i32.const 7932
+    i32.const 7940
     i64.load align=4
     i64.store offset=40 align=4
     local.get $4
-    i32.const 7940
+    i32.const 7948
     i64.load align=4
     i64.store offset=48 align=4
     local.get $4
-    i32.const 7948
+    i32.const 7956
     i64.load align=4
     i64.store offset=56 align=4
     local.get $4
     i32.const -64
     i32.sub
-    i32.const 7956
+    i32.const 7964
     i64.load align=4
     i64.store align=4
     local.get $4
-    i32.const 7964
+    i32.const 7972
     i64.load align=4
     i64.store offset=72 align=4
     local.get $4
-    i32.const 7972
+    i32.const 7980
     i64.load align=4
     i64.store offset=80 align=4
     local.get $4
-    i32.const 7980
+    i32.const 7988
     i64.load align=4
     i64.store offset=88 align=4
     local.get $4
-    i32.const 7988
+    i32.const 7996
     i64.load align=4
     i64.store offset=96 align=4
     local.get $4
-    i32.const 7996
+    i32.const 8004
     i64.load align=4
     i64.store offset=104 align=4
     local.get $4
-    i32.const 8004
+    i32.const 8012
     i64.load align=4
     i64.store offset=112 align=4
     local.get $4
-    i32.const 8012
+    i32.const 8020
     i32.load
     i32.store offset=120
     block $block
@@ -47852,7 +47871,7 @@
                                               local.set $6
                                               i32.const 0
                                               local.set $10
-                                              i32.const 14849
+                                              i32.const 14857
                                               local.set $7
                                               local.get $1
                                               local.get $6
@@ -47884,7 +47903,7 @@
                                               i64.store
                                               i32.const 1
                                               local.set $10
-                                              i32.const 14849
+                                              i32.const 14857
                                               local.set $7
                                             else
                                               local.get $5
@@ -47893,9 +47912,9 @@
                                               i32.const 0
                                               i32.ne
                                               local.set $10
-                                              i32.const 14850
-                                              i32.const 14851
-                                              i32.const 14849
+                                              i32.const 14858
+                                              i32.const 14859
+                                              i32.const 14857
                                               local.get $5
                                               i32.const 1
                                               i32.and
@@ -47910,7 +47929,7 @@
                                           end ;; $block_26
                                           i32.const 0
                                           local.set $10
-                                          i32.const 14849
+                                          i32.const 14857
                                           local.set $7
                                           local.get $11
                                           i64.load
@@ -47925,7 +47944,7 @@
                                         local.set $6
                                         i32.const 0
                                         local.set $10
-                                        i32.const 14849
+                                        i32.const 14857
                                         local.set $16
                                         i32.const 1
                                         local.set $13
@@ -47944,7 +47963,7 @@
                                     local.get $11
                                     i32.load
                                     local.tee $5
-                                    i32.const 14859
+                                    i32.const 14867
                                     local.get $5
                                     select
                                     local.set $6
@@ -47997,7 +48016,7 @@
                             local.set $6
                             i32.const 0
                             local.set $10
-                            i32.const 14849
+                            i32.const 14857
                             local.set $16
                             local.get $1
                             local.set $13
@@ -48027,11 +48046,11 @@
                           local.tee $7
                           select
                           local.set $10
-                          i32.const 14849
+                          i32.const 14857
                           local.get $6
                           i32.const 4
                           i32.shr_u
-                          i32.const 14849
+                          i32.const 14857
                           i32.add
                           local.get $7
                           select
@@ -48052,7 +48071,7 @@
                       local.set $18
                       i32.const 0
                       local.set $10
-                      i32.const 14849
+                      i32.const 14857
                       local.set $16
                       local.get $1
                       local.get $14
@@ -48980,13 +48999,13 @@
       local.tee $1
       call $___DOUBLE_BITS
       local.set $24
-      i32.const 14866
+      i32.const 14874
       local.set $18
       i32.const 1
     else
-      i32.const 14869
-      i32.const 14872
-      i32.const 14867
+      i32.const 14877
+      i32.const 14880
+      i32.const 14875
       local.get $4
       i32.const 1
       i32.and
@@ -49009,8 +49028,8 @@
     i64.const 9218868437227405312
     i64.eq
     if $if_0 (result i32)
-      i32.const 14893
-      i32.const 14897
+      i32.const 14901
+      i32.const 14905
       local.get $5
       i32.const 32
       i32.and
@@ -49018,8 +49037,8 @@
       i32.ne
       local.tee $3
       select
-      i32.const 14885
-      i32.const 14889
+      i32.const 14893
+      i32.const 14897
       local.get $3
       select
       local.get $1
@@ -50319,7 +50338,7 @@
           i32.eqz
           if $if_46
             local.get $0
-            i32.const 14901
+            i32.const 14909
             i32.const 1
             call $_out_281
           end ;; $if_46
@@ -50476,7 +50495,7 @@
                     br $block_4
                   end ;; $if_53
                   local.get $0
-                  i32.const 14901
+                  i32.const 14909
                   i32.const 1
                   call $_out_281
                   local.get $9
@@ -50814,7 +50833,7 @@
   
   (func $_pthread_self (type $11)
     (result i32)
-    i32.const 8016
+    i32.const 8024
     )
   
   (func $___strerror_l (type $3)
@@ -51755,7 +51774,7 @@
     local.get $1
     i32.store
     local.get $0
-    i32.const 12356
+    i32.const 12364
     local.get $2
     call $_vfprintf
     local.set $0
@@ -51796,10 +51815,10 @@
       end ;; $block
       local.set $0
     else
-      i32.const 7888
+      i32.const 7896
       i32.load
       if $if_2 (result i32)
-        i32.const 7888
+        i32.const 7896
         i32.load
         call $_fflush
       else
@@ -58754,7 +58773,7 @@
       call $__ZN7Context17onRequestTrailersEv
       drop
       local.get $0
-      i32.const 152
+      i32.const 153
       call_indirect $26 (type $1)
       i32.const 17496
       call $__ZN7Context17onRequestTrailersEv
@@ -58863,12 +58882,12 @@
   (func $__ZNSt11logic_errorC2EPKc (type $1)
     (param $0 i32)
     local.get $0
-    i32.const 8352
+    i32.const 8360
     i32.store
     local.get $0
     i32.const 4
     i32.add
-    i32.const 12408
+    i32.const 12416
     call $__ZNSt3__218__libcpp_refstringC2EPKc
     )
   
@@ -60158,7 +60177,7 @@
         local.get $4
         i32.const 1
         i32.add
-        i32.const 14921
+        i32.const 14929
         local.get $5
         call $_snprintf
         local.tee $3
@@ -60268,9 +60287,9 @@
         i64.ne
         if $if_1
           local.get $2
-          i32.const 15060
+          i32.const 15068
           i32.store
-          i32.const 15010
+          i32.const 15018
           local.get $2
           call $_abort_message
         end ;; $if_1
@@ -60321,7 +60340,7 @@
           call_indirect $26 (type $0)
           local.set $0
           local.get $1
-          i32.const 15060
+          i32.const 15068
           i32.store
           local.get $1
           local.get $2
@@ -60329,23 +60348,23 @@
           local.get $1
           local.get $0
           i32.store offset=8
-          i32.const 14924
+          i32.const 14932
           local.get $1
           call $_abort_message
         else
           local.get $3
-          i32.const 15060
+          i32.const 15068
           i32.store
           local.get $3
           local.get $2
           i32.store offset=4
-          i32.const 14969
+          i32.const 14977
           local.get $3
           call $_abort_message
         end ;; $if_3
       end ;; $if_0
     end ;; $if
-    i32.const 15048
+    i32.const 15056
     local.get $5
     call $_abort_message
     )
@@ -60364,7 +60383,7 @@
     i32.const 5
     call $_pthread_once
     if $if
-      i32.const 15199
+      i32.const 15207
       local.get $0
       call $_abort_message
     else
@@ -60393,7 +60412,7 @@
     local.get $2
     local.get $1
     i32.store
-    i32.const 7636
+    i32.const 7644
     i32.load
     local.tee $1
     local.get $0
@@ -61285,10 +61304,10 @@
     i32.add
     global.set $33
     i32.const 17576
-    i32.const 47
+    i32.const 48
     call $_pthread_key_create
     if $if
-      i32.const 15248
+      i32.const 15256
       local.get $0
       call $_abort_message
     else
@@ -61313,7 +61332,7 @@
     i32.const 0
     call $_pthread_setspecific
     if $if
-      i32.const 15298
+      i32.const 15306
       local.get $1
       call $_abort_message
     else
@@ -61325,7 +61344,7 @@
   (func $__ZNSt11logic_errorD2Ev (type $1)
     (param $0 i32)
     local.get $0
-    i32.const 8352
+    i32.const 8360
     i32.store
     local.get $0
     i32.const 4
