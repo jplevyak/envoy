@@ -8,6 +8,7 @@
 
 #include "envoy/common/exception.h"
 #include "envoy/config/wasm/v2/wasm.pb.validate.h"
+#include "envoy/grpc/status.h"
 #include "envoy/http/codes.h"
 #include "envoy/server/wasm.h"
 #include "envoy/thread_local/thread_local.h"
@@ -22,6 +23,7 @@
 #include "common/http/header_map_impl.h"
 #include "common/http/message_impl.h"
 #include "common/http/utility.h"
+#include "common/tracing/http_tracer_impl.h"
 
 #include "extensions/common/wasm/wavm/wavm.h"
 #include "extensions/common/wasm/well_known_names.h"
@@ -202,7 +204,7 @@ void getProtocolHandler(void* raw_context, uint32_t type, uint32_t value_ptr_ptr
     return;
   auto context = WASM_CONTEXT(raw_context);
   context->wasm()->copyToPointerSize(context->getProtocol(static_cast<StreamType>(type)),
-                                    value_ptr_ptr, value_size_ptr);
+                                     value_ptr_ptr, value_size_ptr);
 }
 
 // Metadata
@@ -286,136 +288,64 @@ uint32_t setSharedDataHandler(void* raw_context, uint32_t key_ptr, uint32_t key_
   return static_cast<uint32_t>(ok);
 }
 
-// Request Headers Handlers
-void addRequestHeaderHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                             uint32_t value_ptr, uint32_t value_size) {
+// Header/Trailer/Metadata Maps
+void addMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size,
+                        uint32_t value_ptr, uint32_t value_size) {
+  if (type > static_cast<uint32_t>(MapType::MAX)) {
+    return;
+  }
   auto context = WASM_CONTEXT(raw_context);
-  context->addRequestHeader(context->wasmVm()->getMemory(key_ptr, key_size),
-                            context->wasmVm()->getMemory(value_ptr, value_size));
+  context->addMapValue(static_cast<MapType>(type), context->wasmVm()->getMemory(key_ptr, key_size),
+                       context->wasmVm()->getMemory(value_ptr, value_size));
 }
 
-void getRequestHeaderHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                             uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
+void getMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size,
+                        uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
+  if (type > static_cast<uint32_t>(MapType::MAX)) {
+    return;
+  }
   auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getRequestHeader(context->wasmVm()->getMemory(key_ptr, key_size));
+  auto result = context->getMapValue(static_cast<MapType>(type),
+                                     context->wasmVm()->getMemory(key_ptr, key_size));
   context->wasm()->copyToPointerSize(result, value_ptr_ptr, value_size_ptr);
 }
 
-void replaceRequestHeaderHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                                 uint32_t value_ptr, uint32_t value_size) {
+void replaceMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size,
+                            uint32_t value_ptr, uint32_t value_size) {
+  if (type > static_cast<uint32_t>(MapType::MAX)) {
+    return;
+  }
   auto context = WASM_CONTEXT(raw_context);
-  context->replaceRequestHeader(context->wasmVm()->getMemory(key_ptr, key_size),
-                                context->wasmVm()->getMemory(value_ptr, value_size));
+  context->replaceMapValue(static_cast<MapType>(type),
+                           context->wasmVm()->getMemory(key_ptr, key_size),
+                           context->wasmVm()->getMemory(value_ptr, value_size));
 }
 
-void removeRequestHeaderHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size) {
+void removeMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size) {
+  if (type > static_cast<uint32_t>(MapType::MAX)) {
+    return;
+  }
   auto context = WASM_CONTEXT(raw_context);
-  context->removeRequestHeader(context->wasmVm()->getMemory(key_ptr, key_size));
+  context->removeMapValue(static_cast<MapType>(type),
+                          context->wasmVm()->getMemory(key_ptr, key_size));
 }
 
-void getRequestHeaderPairsHandler(void* raw_context, uint32_t ptr_ptr, uint32_t size_ptr) {
+void getMapPairsHandler(void* raw_context, uint32_t type, uint32_t ptr_ptr, uint32_t size_ptr) {
+  if (type > static_cast<uint32_t>(MapType::MAX)) {
+    return;
+  }
   auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getRequestHeaderPairs();
+  auto result = context->getMapPairs(static_cast<MapType>(type));
   getPairs(context, result, ptr_ptr, size_ptr);
 }
 
-// Request Trailers Handlers
-void addRequestTrailerHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                              uint32_t value_ptr, uint32_t value_size) {
+void setMapPairsHandler(void* raw_context, uint32_t type, uint32_t ptr, uint32_t size) {
+  if (type > static_cast<uint32_t>(MapType::MAX)) {
+    return;
+  }
   auto context = WASM_CONTEXT(raw_context);
-  context->addRequestTrailer(context->wasmVm()->getMemory(key_ptr, key_size),
-                             context->wasmVm()->getMemory(value_ptr, value_size));
-}
-
-void getRequestTrailerHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                              uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
-  auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getRequestTrailer(context->wasmVm()->getMemory(key_ptr, key_size));
-  context->wasm()->copyToPointerSize(result, value_ptr_ptr, value_size_ptr);
-}
-
-void replaceRequestTrailerHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                                  uint32_t value_ptr, uint32_t value_size) {
-  auto context = WASM_CONTEXT(raw_context);
-  context->replaceRequestTrailer(context->wasmVm()->getMemory(key_ptr, key_size),
-                                 context->wasmVm()->getMemory(value_ptr, value_size));
-}
-
-void removeRequestTrailerHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size) {
-  auto context = WASM_CONTEXT(raw_context);
-  context->removeRequestTrailer(context->wasmVm()->getMemory(key_ptr, key_size));
-}
-
-void getRequestTrailerPairsHandler(void* raw_context, uint32_t ptr_ptr, uint32_t size_ptr) {
-  auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getRequestTrailerPairs();
-  getPairs(context, result, ptr_ptr, size_ptr);
-}
-
-// Response Headers Handlers
-void addResponseHeaderHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                              uint32_t value_ptr, uint32_t value_size) {
-  auto context = WASM_CONTEXT(raw_context);
-  context->addResponseHeader(context->wasmVm()->getMemory(key_ptr, key_size),
-                             context->wasmVm()->getMemory(value_ptr, value_size));
-}
-
-void getResponseHeaderHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                              uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
-  auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getResponseHeader(context->wasmVm()->getMemory(key_ptr, key_size));
-  context->wasm()->copyToPointerSize(result, value_ptr_ptr, value_size_ptr);
-}
-
-void replaceResponseHeaderHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                                  uint32_t value_ptr, uint32_t value_size) {
-  auto context = WASM_CONTEXT(raw_context);
-  context->replaceResponseHeader(context->wasmVm()->getMemory(key_ptr, key_size),
-                                 context->wasmVm()->getMemory(value_ptr, value_size));
-}
-
-void removeResponseHeaderHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size) {
-  auto context = WASM_CONTEXT(raw_context);
-  context->removeResponseHeader(context->wasmVm()->getMemory(key_ptr, key_size));
-}
-
-void getResponseHeaderPairsHandler(void* raw_context, uint32_t ptr_ptr, uint32_t size_ptr) {
-  auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getResponseHeaderPairs();
-  getPairs(context, result, ptr_ptr, size_ptr);
-}
-
-// Response Trailers Handlers
-void addResponseTrailerHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                               uint32_t value_ptr, uint32_t value_size) {
-  auto context = WASM_CONTEXT(raw_context);
-  context->addResponseTrailer(context->wasmVm()->getMemory(key_ptr, key_size),
-                              context->wasmVm()->getMemory(value_ptr, value_size));
-}
-
-void getResponseTrailerHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                               uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
-  auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getResponseTrailer(context->wasmVm()->getMemory(key_ptr, key_size));
-  context->wasm()->copyToPointerSize(result, value_ptr_ptr, value_size_ptr);
-}
-
-void replaceResponseTrailerHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size,
-                                   uint32_t value_ptr, uint32_t value_size) {
-  auto context = WASM_CONTEXT(raw_context);
-  context->replaceResponseTrailer(context->wasmVm()->getMemory(key_ptr, key_size),
-                                  context->wasmVm()->getMemory(value_ptr, value_size));
-}
-
-void removeResponseTrailerHandler(void* raw_context, uint32_t key_ptr, uint32_t key_size) {
-  auto context = WASM_CONTEXT(raw_context);
-  context->removeResponseTrailer(context->wasmVm()->getMemory(key_ptr, key_size));
-}
-
-void getResponseTrailerPairsHandler(void* raw_context, uint32_t ptr_ptr, uint32_t size_ptr) {
-  auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getResponseTrailerPairs();
-  getPairs(context, result, ptr_ptr, size_ptr);
+  context->setMapPairs(static_cast<MapType>(type),
+                       toPairs(context->wasmVm()->getMemory(ptr, size)));
 }
 
 // Body Buffer
@@ -467,6 +397,54 @@ void recordMetricHandler(void* raw_context, uint32_t metric_id, uint64_t value) 
 uint64_t getMetricHandler(void* raw_context, uint32_t metric_id) {
   auto context = WASM_CONTEXT(raw_context);
   return context->getMetric(metric_id);
+}
+
+uint32_t grpcCallHandler(void* raw_context, uint32_t service_ptr, uint32_t service_size,
+                         uint32_t service_name_ptr, uint32_t service_name_size,
+                         uint32_t method_name_ptr, uint32_t method_name_size, uint32_t request_ptr,
+                         uint32_t request_size, uint32_t timeout_milliseconds) {
+  auto context = WASM_CONTEXT(raw_context);
+  auto service = context->wasmVm()->getMemory(service_ptr, service_size);
+  auto service_name = context->wasmVm()->getMemory(service_name_ptr, service_name_size);
+  auto method_name = context->wasmVm()->getMemory(method_name_ptr, method_name_size);
+  auto request = context->wasmVm()->getMemory(request_ptr, request_size);
+  envoy::api::v2::core::GrpcService service_proto;
+  if (!service_proto.ParseFromArray(service.data(), service.size())) {
+    return false;
+  }
+  return context->grpcCall(service_proto, service_name, method_name, request,
+                           std::chrono::milliseconds(timeout_milliseconds));
+}
+
+uint32_t grpcStreamHandler(void* raw_context, uint32_t service_ptr, uint32_t service_size,
+                           uint32_t service_name_ptr, uint32_t service_name_size,
+                           uint32_t method_name_ptr, uint32_t method_name_size) {
+  auto context = WASM_CONTEXT(raw_context);
+  auto service = context->wasmVm()->getMemory(service_ptr, service_size);
+  auto service_name = context->wasmVm()->getMemory(service_name_ptr, service_name_size);
+  auto method_name = context->wasmVm()->getMemory(method_name_ptr, method_name_size);
+  envoy::api::v2::core::GrpcService service_proto;
+  if (!service_proto.ParseFromArray(service.data(), service.size())) {
+    return false;
+  }
+  return context->grpcStream(service_proto, service_name, method_name);
+}
+
+void grpcCancelHandler(void* raw_context, uint32_t token) {
+  auto context = WASM_CONTEXT(raw_context);
+  context->grpcCancel(token);
+}
+
+void grpcCloseHandler(void* raw_context, uint32_t token) {
+  auto context = WASM_CONTEXT(raw_context);
+  context->grpcClose(token);
+}
+
+void grpcSendHandler(void* raw_context, uint32_t token, uint32_t message_ptr, uint32_t message_size,
+                     uint32_t end_stream) {
+  auto context = WASM_CONTEXT(raw_context);
+  auto message = context->wasmVm()->getMemory(message_ptr, message_size);
+  context->grpcSend(token, message, end_stream);
 }
 
 uint32_t getTotalMemoryHandler(void*) { return 0x7FFFFFFF; }
@@ -522,58 +500,6 @@ void logHandler(void* raw_context, uint32_t level, uint32_t address, uint32_t si
                      context->wasmVm()->getMemory(address, size));
 }
 
-// Headers/Trailer Helper Functions
-void addHeader(Http::HeaderMap* map, absl::string_view key, absl::string_view value) {
-  if (!map)
-    return;
-  const Http::LowerCaseString lower_key(std::move(std::string(key)));
-  map->addCopy(lower_key, std::string(value));
-}
-
-absl::string_view getHeader(const Http::HeaderMap* map, absl::string_view key_view) {
-  if (!map)
-    return "";
-  const Http::LowerCaseString lower_key(std::move(std::string(key_view)));
-  auto entry = map->get(lower_key);
-  if (!entry)
-    return "";
-  return entry->value().getStringView();
-}
-
-Pairs getHeaderPairs(const Http::HeaderMap* map) {
-  if (!map)
-    return {};
-  Pairs pairs;
-  pairs.reserve(map->size());
-  map->iterate(
-      [](const Http::HeaderEntry& header, void* pairs) -> Http::HeaderMap::Iterate {
-        (static_cast<Pairs*>(pairs))
-            ->push_back(
-                std::make_pair(header.key().getStringView(), header.value().getStringView()));
-        return Http::HeaderMap::Iterate::Continue;
-      },
-      &pairs);
-  return pairs;
-}
-
-void removeHeader(Http::HeaderMap* map, absl::string_view key) {
-  if (!map)
-    return;
-  const Http::LowerCaseString lower_key(std::move(std::string(key)));
-  map->remove(lower_key);
-}
-
-void replaceHeader(Http::HeaderMap* map, absl::string_view key, absl::string_view value) {
-  if (!map)
-    return;
-  const Http::LowerCaseString lower_key(std::move(std::string(key)));
-  auto entry = map->get(lower_key);
-  if (entry != nullptr)
-    entry->value(value.data(), value.size());
-  else
-    map->addCopy(lower_key, std::string(value));
-}
-
 const ProtobufWkt::Struct*
 getStructProtoFromMetadata(const envoy::api::v2::core::Metadata& metadata,
                            absl::string_view name = "") {
@@ -626,98 +552,133 @@ bool Context::setSharedData(absl::string_view key, absl::string_view value, uint
   return global_shared_data.set(wasm_->id(), key, value, cas);
 }
 
-// Request Headers
-void Context::addRequestHeader(absl::string_view key, absl::string_view value) {
-  addHeader(request_headers_, key, value);
+// Header/Trailer/Metadata Maps.
+Http::HeaderMap* Context::getMap(MapType type) {
+  switch (type) {
+  case MapType::RequestHeaders:
+    return request_headers_;
+  case MapType::RequestTrailers:
+    return request_trailers_;
+  case MapType::ResponseHeaders:
+    return response_headers_;
+  case MapType::ResponseTrailers:
+    return response_trailers_;
+  case MapType::GrpcCreateInitialMetadata:
+    return grpc_create_initial_metadata_;
+  default:
+    return nullptr;
+  }
 }
 
-absl::string_view Context::getRequestHeader(absl::string_view key) {
-  if (access_log_request_headers_)
-    return getHeader(access_log_request_headers_, key);
-  return getHeader(request_headers_, key);
+const Http::HeaderMap* Context::getConstMap(MapType type) {
+  switch (type) {
+  case MapType::RequestHeaders:
+    if (access_log_request_headers_) {
+      return access_log_request_headers_;
+    }
+    return request_headers_;
+  case MapType::RequestTrailers:
+    if (access_log_request_trailers_) {
+      return access_log_request_trailers_;
+    }
+    return request_trailers_;
+  case MapType::ResponseHeaders:
+    if (access_log_response_headers_) {
+      return access_log_response_headers_;
+    }
+    return response_headers_;
+  case MapType::ResponseTrailers:
+    if (access_log_response_trailers_) {
+      return access_log_response_trailers_;
+    }
+    return response_trailers_;
+  case MapType::GrpcCreateInitialMetadata:
+    return grpc_create_initial_metadata_;
+  case MapType::GrpcReceiveInitialMetadata:
+    return grpc_receive_initial_metadata_.get();
+  case MapType::GrpcReceiveTrailingMetadata:
+    return grpc_receive_trailing_metadata_.get();
+  }
+  return nullptr;
 }
 
-Pairs Context::getRequestHeaderPairs() {
-  if (access_log_request_headers_)
-    return getHeaderPairs(access_log_request_headers_);
-  return getHeaderPairs(request_headers_);
+void Context::addMapValue(MapType type, absl::string_view key, absl::string_view value) {
+  auto map = getMap(type);
+  if (!map)
+    return;
+  const Http::LowerCaseString lower_key(std::move(std::string(key)));
+  map->addCopy(lower_key, std::string(value));
 }
 
-void Context::removeRequestHeader(absl::string_view key) { removeHeader(request_headers_, key); }
-
-void Context::replaceRequestHeader(absl::string_view key, absl::string_view value) {
-  replaceHeader(request_headers_, key, value);
+absl::string_view Context::getMapValue(MapType type, absl::string_view key) {
+  auto map = getConstMap(type);
+  if (!map)
+    return "";
+  const Http::LowerCaseString lower_key(std::move(std::string(key)));
+  auto entry = map->get(lower_key);
+  if (!entry)
+    return "";
+  return entry->value().getStringView();
 }
 
-// Request Trailers
-void Context::addRequestTrailer(absl::string_view key, absl::string_view value) {
-  addHeader(request_trailers_, key, value);
+Pairs headerMapToPairs(const Http::HeaderMap* map) {
+  if (!map)
+    return {};
+  Pairs pairs;
+  pairs.reserve(map->size());
+  map->iterate(
+      [](const Http::HeaderEntry& header, void* pairs) -> Http::HeaderMap::Iterate {
+        (static_cast<Pairs*>(pairs))
+            ->push_back(
+                std::make_pair(header.key().getStringView(), header.value().getStringView()));
+        return Http::HeaderMap::Iterate::Continue;
+      },
+      &pairs);
+  return pairs;
 }
 
-absl::string_view Context::getRequestTrailer(absl::string_view key) {
-  if (access_log_request_trailers_)
-    return getHeader(access_log_request_trailers_, key);
-  return getHeader(request_trailers_, key);
+Pairs Context::getMapPairs(MapType type) { return headerMapToPairs(getConstMap(type)); }
+
+void Context::setMapPairs(MapType type, const Pairs& pairs) {
+  auto map = getMap(type);
+  if (!map)
+    return;
+  std::vector<std::string> keys;
+  map->iterate(
+      [](const Http::HeaderEntry& header, void* keys) -> Http::HeaderMap::Iterate {
+        (static_cast<std::vector<std::string>*>(keys))
+            ->push_back(std::string(header.key().getStringView()));
+        return Http::HeaderMap::Iterate::Continue;
+      },
+      &keys);
+  for (auto& k : keys) {
+    const Http::LowerCaseString lower_key(std::move(k));
+    map->remove(lower_key);
+  }
+  for (auto& p : pairs) {
+    const Http::LowerCaseString lower_key(std::move(std::string(p.first)));
+    map->addCopy(lower_key, std::move(std::string(p.second)));
+  }
 }
 
-Pairs Context::getRequestTrailerPairs() {
-  if (access_log_request_trailers_)
-    return getHeaderPairs(access_log_request_trailers_);
-  return getHeaderPairs(request_trailers_);
+void Context::removeMapValue(MapType type, absl::string_view key) {
+  auto map = getMap(type);
+  if (!map)
+    return;
+  const Http::LowerCaseString lower_key(std::move(std::string(key)));
+  map->remove(lower_key);
 }
 
-void Context::removeRequestTrailer(absl::string_view key) { removeHeader(request_trailers_, key); }
-
-void Context::replaceRequestTrailer(absl::string_view key, absl::string_view value) {
-  replaceHeader(request_trailers_, key, value);
-}
-
-// Response Headers
-void Context::addResponseHeader(absl::string_view key, absl::string_view value) {
-  addHeader(response_headers_, key, value);
-}
-
-absl::string_view Context::getResponseHeader(absl::string_view key) {
-  if (access_log_response_headers_)
-    return getHeader(access_log_response_headers_, key);
-  return getHeader(response_headers_, key);
-}
-
-Pairs Context::getResponseHeaderPairs() {
-  if (access_log_response_headers_)
-    return getHeaderPairs(access_log_response_headers_);
-  return getHeaderPairs(response_headers_);
-}
-
-void Context::removeResponseHeader(absl::string_view key) { removeHeader(response_headers_, key); }
-
-void Context::replaceResponseHeader(absl::string_view key, absl::string_view value) {
-  replaceHeader(response_headers_, key, value);
-}
-
-// Response Trailers
-void Context::addResponseTrailer(absl::string_view key, absl::string_view value) {
-  addHeader(response_trailers_, key, value);
-}
-
-absl::string_view Context::getResponseTrailer(absl::string_view key) {
-  if (access_log_response_trailers_)
-    return getHeader(access_log_response_trailers_, key);
-  return getHeader(response_trailers_, key);
-}
-
-Pairs Context::getResponseTrailerPairs() {
-  if (access_log_response_trailers_)
-    return getHeaderPairs(access_log_response_trailers_);
-  return getHeaderPairs(response_trailers_);
-}
-
-void Context::removeResponseTrailer(absl::string_view key) {
-  removeHeader(response_trailers_, key);
-}
-
-void Context::replaceResponseTrailer(absl::string_view key, absl::string_view value) {
-  replaceHeader(response_trailers_, key, value);
+void Context::replaceMapValue(MapType type, absl::string_view key, absl::string_view value) {
+  auto map = getMap(type);
+  if (!map)
+    return;
+  const Http::LowerCaseString lower_key(std::move(std::string(key)));
+  auto entry = map->get(lower_key);
+  if (entry != nullptr)
+    entry->value(value.data(), value.size());
+  else
+    map->addCopy(lower_key, std::string(value));
 }
 
 // Body Buffer
@@ -772,7 +733,17 @@ uint32_t Context::httpCall(absl::string_view cluster, const Pairs& request_heade
     timeout = std::chrono::milliseconds(timeout_milliseconds);
   }
 
-  auto token = next_async_token_++;
+  auto token = next_http_call_token_++;
+  // Handle rollover.
+  for (;;) {
+    if (token == 0) {
+      token = next_http_call_token_++;
+    }
+    if (!http_request_.count(token)) {
+      break;
+    }
+    token = next_http_call_token_++;
+  }
   auto& handler = http_request_[token];
   auto http_request = clusterManager()
                           .httpAsyncClientForCluster(cluster_string)
@@ -785,6 +756,74 @@ uint32_t Context::httpCall(absl::string_view cluster, const Pairs& request_heade
   handler.context = this;
   handler.token = token;
   handler.request = http_request;
+  return token;
+}
+
+uint32_t Context::grpcCall(const envoy::api::v2::core::GrpcService& grpc_service,
+                           absl::string_view service_name, absl::string_view method_name,
+                           absl::string_view request,
+                           const absl::optional<std::chrono::milliseconds>& timeout) {
+  auto token = next_grpc_token_++;
+  if (IsGrpcStreamToken(token)) {
+    token = next_grpc_token_++;
+  }
+  // Handle rollover.
+  for (;;) {
+    if (token == 0) {
+      token = next_grpc_token_ += 2;
+    }
+    if (!grpc_call_request_.count(token)) {
+      break;
+    }
+    token = next_grpc_token_ += 2;
+  }
+  auto& handler = grpc_call_request_[token];
+  auto grpc_request =
+      clusterManager()
+          .grpcAsyncClientManager()
+          .factoryForGrpcService(grpc_service, wasm_->scope_, true /* skip_cluster_check */)
+          ->create()
+          ->sendRaw(service_name, method_name, std::make_unique<Buffer::OwnedImpl>(request),
+                    handler, Tracing::NullSpan::instance(), timeout);
+  if (!grpc_request) {
+    grpc_call_request_.erase(token);
+    return 0;
+  }
+  handler.context = this;
+  handler.token = token;
+  handler.request = grpc_request;
+  return token;
+}
+
+uint32_t Context::grpcStream(const envoy::api::v2::core::GrpcService& grpc_service,
+                             absl::string_view service_name, absl::string_view method_name) {
+  auto token = next_grpc_token_++;
+  if (IsGrpcCallToken(token)) {
+    token = next_grpc_token_++;
+  }
+  // Handle rollover.
+  for (;;) {
+    if (token == 0) {
+      token = next_grpc_token_ += 2;
+    }
+    if (!grpc_stream_.count(token)) {
+      break;
+    }
+    token = next_grpc_token_ += 2;
+  }
+  auto& handler = grpc_stream_[token];
+  auto stream =
+      clusterManager()
+          .grpcAsyncClientManager()
+          .factoryForGrpcService(grpc_service, wasm_->scope_, true /* skip_cluster_check */)
+          ->create()
+          ->startRaw(service_name, method_name, handler);
+  if (!stream) {
+    grpc_stream_.erase(token);
+    return 0;
+  }
+  handler.context = this;
+  handler.token = token;
   return token;
 }
 
@@ -1078,6 +1117,33 @@ void Context::onHttpCallResponse(uint32_t token, const Pairs& response_headers,
                              trailers_ptr, trailers_size);
 }
 
+void Context::onGrpcCreateInitialMetadata(uint32_t token, Http::HeaderMap& metadata) {
+  if (!wasm_->onGrpcCreateInitialMetadata_) {
+    return;
+  }
+  grpc_create_initial_metadata_ = &metadata;
+  wasm_->onGrpcCreateInitialMetadata_(this, id_, token);
+  grpc_create_initial_metadata_ = nullptr;
+}
+
+void Context::onGrpcReceiveInitialMetadata(uint32_t token, Http::HeaderMapPtr&& metadata) {
+  if (!wasm_->onGrpcReceiveInitialMetadata_) {
+    return;
+  }
+  grpc_receive_initial_metadata_ = std::move(metadata);
+  wasm_->onGrpcReceiveInitialMetadata_(this, id_, token);
+  grpc_receive_initial_metadata_ = nullptr;
+}
+
+void Context::onGrpcReceiveTrailingMetadata(uint32_t token, Http::HeaderMapPtr&& metadata) {
+  if (!wasm_->onGrpcReceiveTrailingMetadata_) {
+    return;
+  }
+  grpc_receive_trailing_metadata_ = std::move(metadata);
+  wasm_->onGrpcReceiveTrailingMetadata_(this, id_, token);
+  grpc_receive_trailing_metadata_ = nullptr;
+}
+
 uint32_t Context::defineMetric(MetricType type, absl::string_view name) {
   if (type == MetricType::Counter) {
     auto id = wasm_->nextCounterMetricId();
@@ -1201,34 +1267,23 @@ void Wasm::registerCallbacks() {
   _REGISTER_PROXY(getSharedData);
   _REGISTER_PROXY(setSharedData);
 
-  _REGISTER_PROXY(getRequestHeader);
-  _REGISTER_PROXY(addRequestHeader);
-  _REGISTER_PROXY(replaceRequestHeader);
-  _REGISTER_PROXY(removeRequestHeader);
-  _REGISTER_PROXY(getRequestHeaderPairs);
-
-  _REGISTER_PROXY(getRequestTrailer);
-  _REGISTER_PROXY(addRequestTrailer);
-  _REGISTER_PROXY(replaceRequestTrailer);
-  _REGISTER_PROXY(removeRequestTrailer);
-  _REGISTER_PROXY(getRequestTrailerPairs);
-
-  _REGISTER_PROXY(getResponseHeader);
-  _REGISTER_PROXY(addResponseHeader);
-  _REGISTER_PROXY(replaceResponseHeader);
-  _REGISTER_PROXY(removeResponseHeader);
-  _REGISTER_PROXY(getResponseHeaderPairs);
-
-  _REGISTER_PROXY(getResponseTrailer);
-  _REGISTER_PROXY(addResponseTrailer);
-  _REGISTER_PROXY(replaceResponseTrailer);
-  _REGISTER_PROXY(removeResponseTrailer);
-  _REGISTER_PROXY(getResponseTrailerPairs);
+  _REGISTER_PROXY(getMapValue);
+  _REGISTER_PROXY(addMapValue);
+  _REGISTER_PROXY(replaceMapValue);
+  _REGISTER_PROXY(removeMapValue);
+  _REGISTER_PROXY(getMapPairs);
+  _REGISTER_PROXY(setMapPairs);
 
   _REGISTER_PROXY(getRequestBodyBufferBytes);
   _REGISTER_PROXY(getResponseBodyBufferBytes);
 
   _REGISTER_PROXY(httpCall);
+
+  _REGISTER_PROXY(grpcCall);
+  _REGISTER_PROXY(grpcStream);
+  _REGISTER_PROXY(grpcClose);
+  _REGISTER_PROXY(grpcCancel);
+  _REGISTER_PROXY(grpcSend);
 
   _REGISTER_PROXY(setTickPeriodMilliseconds);
 
@@ -1269,6 +1324,11 @@ void Wasm::getFunctions() {
   _GET_PROXY(onResponseTrailers);
   _GET_PROXY(onResponseMetadata);
   _GET_PROXY(onHttpCallResponse);
+  _GET_PROXY(onGrpcReceive);
+  _GET_PROXY(onGrpcClose);
+  _GET_PROXY(onGrpcCreateInitialMetadata);
+  _GET_PROXY(onGrpcReceiveInitialMetadata);
+  _GET_PROXY(onGrpcReceiveTrailingMetadata);
   _GET_PROXY(onDone);
   _GET_PROXY(onLog);
   _GET_PROXY(onDelete);
@@ -1473,26 +1533,129 @@ void Context::setEncoderFilterCallbacks(Envoy::Http::StreamEncoderFilterCallback
   encoder_callbacks_ = &callbacks;
 }
 
-void Context::onAsyncClientSuccess(uint32_t token, Envoy::Http::MessagePtr& response) {
+void Context::onHttpCallSuccess(uint32_t token, Envoy::Http::MessagePtr& response) {
   auto body =
       absl::string_view(static_cast<char*>(response->body()->linearize(response->body()->length())),
                         response->body()->length());
-  onHttpCallResponse(token, getHeaderPairs(&response->headers()), body,
-                     getHeaderPairs(response->trailers()));
+  onHttpCallResponse(token, headerMapToPairs(&response->headers()), body,
+                     headerMapToPairs(response->trailers()));
   http_request_.erase(token);
 }
 
-void Context::onAsyncClientFailure(uint32_t token, Http::AsyncClient::FailureReason /* reason */) {
+void Context::onHttpCallFailure(uint32_t token, Http::AsyncClient::FailureReason /* reason */) {
   onHttpCallResponse(token, {}, "", {});
   http_request_.erase(token);
 }
 
 void AsyncClientHandler::onSuccess(Envoy::Http::MessagePtr&& response) {
-  context->onAsyncClientSuccess(token, response);
+  context->onHttpCallSuccess(token, response);
 }
 
 void AsyncClientHandler::onFailure(Http::AsyncClient::FailureReason reason) {
-  context->onAsyncClientFailure(token, reason);
+  context->onHttpCallFailure(token, reason);
+}
+
+void GrpcCallClientHandler::onCreateInitialMetadata(Http::HeaderMap& metadata) {
+  context->onGrpcCreateInitialMetadata(token, metadata);
+}
+
+void GrpcStreamClientHandler::onCreateInitialMetadata(Http::HeaderMap& metadata) {
+  context->onGrpcCreateInitialMetadata(token, metadata);
+}
+
+void GrpcStreamClientHandler::onReceiveInitialMetadata(Http::HeaderMapPtr&& metadata) {
+  context->onGrpcReceiveInitialMetadata(token, std::move(metadata));
+}
+
+void GrpcStreamClientHandler::onReceiveTrailingMetadata(Http::HeaderMapPtr&& metadata) {
+  context->onGrpcReceiveTrailingMetadata(token, std::move(metadata));
+}
+
+void Context::onGrpcReceive(uint32_t token, Buffer::InstancePtr response) {
+  if (wasm_->onGrpcReceive_) {
+    uint32_t response_size = response->length();
+    uint32_t response_ptr = wasm_->copyBuffer(*response);
+    wasm_->onGrpcReceive_(this, id_, token, response_ptr, response_size);
+  }
+  if (IsGrpcCallToken(token)) {
+    grpc_call_request_.erase(token);
+  }
+}
+
+void Context::onGrpcClose(uint32_t token, const Grpc::Status::GrpcStatus& status,
+                          const absl::string_view message) {
+  if (wasm_->onGrpcClose_) {
+    uint32_t message_ptr = wasm_->copyString(message);
+    wasm_->onGrpcClose_(this, id_, token, static_cast<uint32_t>(status), message_ptr,
+                        message.size());
+  }
+  if (IsGrpcCallToken(token)) {
+    grpc_call_request_.erase(token);
+  } else {
+    grpc_stream_.erase(token);
+  }
+}
+
+void Context::grpcSend(uint32_t token, absl::string_view message, bool end_stream) {
+  if (IsGrpcCallToken(token)) {
+    return;
+  }
+  auto it = grpc_stream_.find(token);
+  if (it != grpc_stream_.end()) {
+    it->second.stream->sendRawMessage(
+        Buffer::InstancePtr(new Buffer::OwnedImpl(message.data(), message.size())), end_stream);
+  }
+}
+
+void Context::grpcClose(uint32_t token) {
+  if (IsGrpcCallToken(token)) {
+    auto it = grpc_call_request_.find(token);
+    if (it != grpc_call_request_.end()) {
+      it->second.request->cancel();
+    }
+    grpc_call_request_.erase(token);
+  } else {
+    auto it = grpc_stream_.find(token);
+    if (it != grpc_stream_.end()) {
+      it->second.stream->closeStream();
+    }
+    grpc_stream_.erase(token);
+  }
+}
+
+void Context::grpcCancel(uint32_t token) {
+  if (IsGrpcCallToken(token)) {
+    auto it = grpc_call_request_.find(token);
+    if (it != grpc_call_request_.end()) {
+      it->second.request->cancel();
+    }
+    grpc_call_request_.erase(token);
+  } else {
+    auto it = grpc_stream_.find(token);
+    if (it != grpc_stream_.end()) {
+      it->second.stream->resetStream();
+    }
+    grpc_stream_.erase(token);
+  }
+}
+
+void GrpcCallClientHandler::onSuccessRaw(Buffer::InstancePtr response, Tracing::Span&) {
+  context->onGrpcReceive(token, std::move(response));
+}
+
+void GrpcCallClientHandler::onFailure(Grpc::Status::GrpcStatus status, const std::string& message,
+                                      Tracing::Span&) {
+  context->onGrpcClose(token, status, message);
+}
+
+bool GrpcStreamClientHandler::onReceiveRawMessage(Buffer::InstancePtr response) {
+  context->onGrpcReceive(token, std::move(response));
+  return true;
+}
+
+void GrpcStreamClientHandler::onRemoteClose(Grpc::Status::GrpcStatus status,
+                                            const std::string& message) {
+  context->onGrpcClose(token, status, message);
 }
 
 std::unique_ptr<WasmVm> createWasmVm(absl::string_view wasm_vm) {
