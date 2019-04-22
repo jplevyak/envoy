@@ -549,7 +549,8 @@ void Context::setTickPeriod(std::chrono::milliseconds tick_period) {
 
 uint64_t Context::getCurrentTimeNanoseconds() {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(
-    wasm_->time_source_.systemTime().time_since_epoch()).count();
+             wasm_->time_source_.systemTime().time_since_epoch())
+      .count();
 }
 
 // Shared Data
@@ -792,8 +793,9 @@ uint32_t Context::grpcCall(const envoy::api::v2::core::GrpcService& grpc_service
           .grpcAsyncClientManager()
           .factoryForGrpcService(grpc_service, wasm_->scope_, true /* skip_cluster_check */)
           ->create();
-  auto grpc_request = grpc_client->sendRaw(service_name, method_name, std::make_unique<Buffer::OwnedImpl>(request),
-                    handler, Tracing::NullSpan::instance(), timeout);
+  auto grpc_request =
+      grpc_client->sendRaw(service_name, method_name, std::make_unique<Buffer::OwnedImpl>(request),
+                           handler, Tracing::NullSpan::instance(), timeout);
   if (!grpc_request) {
     grpc_call_request_.erase(token);
     return 0;
