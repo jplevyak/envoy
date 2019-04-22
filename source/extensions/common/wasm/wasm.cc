@@ -788,11 +788,15 @@ uint32_t Context::grpcCall(const envoy::api::v2::core::GrpcService& grpc_service
     token = next_grpc_token_ += 2;
   }
   auto& handler = grpc_call_request_[token];
+  handler.context = this;
+  handler.token = token;
   auto grpc_client =
       clusterManager()
           .grpcAsyncClientManager()
           .factoryForGrpcService(grpc_service, wasm_->scope_, true /* skip_cluster_check */)
           ->create();
+  // NB: this call causes the onCreateInitialMetadata callback to occur inline *before* this call returns.
+  // Consequently the grpc_request is not available.  Attempting to close or reset from that callback will fail.
   auto grpc_request =
       grpc_client->sendRaw(service_name, method_name, std::make_unique<Buffer::OwnedImpl>(request),
                            handler, Tracing::NullSpan::instance(), timeout);
@@ -800,8 +804,6 @@ uint32_t Context::grpcCall(const envoy::api::v2::core::GrpcService& grpc_service
     grpc_call_request_.erase(token);
     return 0;
   }
-  handler.context = this;
-  handler.token = token;
   handler.client = std::move(grpc_client);
   handler.request = grpc_request;
   return token;
@@ -824,18 +826,20 @@ uint32_t Context::grpcStream(const envoy::api::v2::core::GrpcService& grpc_servi
     token = next_grpc_token_ += 2;
   }
   auto& handler = grpc_stream_[token];
+  handler.context = this;
+  handler.token = token;
   auto grpc_client =
       clusterManager()
           .grpcAsyncClientManager()
           .factoryForGrpcService(grpc_service, wasm_->scope_, true /* skip_cluster_check */)
           ->create();
+  // NB: this call causes the onCreateInitialMetadata callback to occur inline *before* this call returns.
+  // Consequently the grpc_stream is not available.  Attempting to close or reset from that callback will fail.
   auto grpc_stream = grpc_client->startRaw(service_name, method_name, handler);
   if (!grpc_stream) {
     grpc_stream_.erase(token);
     return 0;
   }
-  handler.context = this;
-  handler.token = token;
   handler.client = std::move(grpc_client);
   handler.stream = grpc_stream;
   return token;
@@ -1618,7 +1622,7 @@ void Context::grpcSend(uint32_t token, absl::string_view message, bool end_strea
     return;
   }
   auto it = grpc_stream_.find(token);
-  if (it != grpc_stream_.end()) {
+  if (it != grpc_stream_.end() && it->second.stream) {
     it->second.stream->sendRawMessage(
         Buffer::InstancePtr(new Buffer::OwnedImpl(message.data(), message.size())), end_stream);
   }
@@ -1627,13 +1631,13 @@ void Context::grpcSend(uint32_t token, absl::string_view message, bool end_strea
 void Context::grpcClose(uint32_t token) {
   if (IsGrpcCallToken(token)) {
     auto it = grpc_call_request_.find(token);
-    if (it != grpc_call_request_.end()) {
+    if (it != grpc_call_request_.end() && it->second.request) {
       it->second.request->cancel();
     }
     grpc_call_request_.erase(token);
   } else {
     auto it = grpc_stream_.find(token);
-    if (it != grpc_stream_.end()) {
+    if (it != grpc_stream_.end() && it->second.stream) {
       it->second.stream->closeStream();
     }
     grpc_stream_.erase(token);
@@ -1643,13 +1647,13 @@ void Context::grpcClose(uint32_t token) {
 void Context::grpcCancel(uint32_t token) {
   if (IsGrpcCallToken(token)) {
     auto it = grpc_call_request_.find(token);
-    if (it != grpc_call_request_.end()) {
+    if (it != grpc_call_request_.end() && it->second.request) {
       it->second.request->cancel();
     }
     grpc_call_request_.erase(token);
   } else {
     auto it = grpc_stream_.find(token);
-    if (it != grpc_stream_.end()) {
+    if (it != grpc_stream_.end() && it->second.stream) {
       it->second.stream->resetStream();
     }
     grpc_stream_.erase(token);
