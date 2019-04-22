@@ -787,12 +787,12 @@ uint32_t Context::grpcCall(const envoy::api::v2::core::GrpcService& grpc_service
     token = next_grpc_token_ += 2;
   }
   auto& handler = grpc_call_request_[token];
-  auto grpc_request =
+  auto grpc_client =
       clusterManager()
           .grpcAsyncClientManager()
           .factoryForGrpcService(grpc_service, wasm_->scope_, true /* skip_cluster_check */)
-          ->create()
-          ->sendRaw(service_name, method_name, std::make_unique<Buffer::OwnedImpl>(request),
+          ->create();
+  auto grpc_request = grpc_client->sendRaw(service_name, method_name, std::make_unique<Buffer::OwnedImpl>(request),
                     handler, Tracing::NullSpan::instance(), timeout);
   if (!grpc_request) {
     grpc_call_request_.erase(token);
@@ -800,6 +800,7 @@ uint32_t Context::grpcCall(const envoy::api::v2::core::GrpcService& grpc_service
   }
   handler.context = this;
   handler.token = token;
+  handler.client = std::move(grpc_client);
   handler.request = grpc_request;
   return token;
 }
@@ -821,18 +822,20 @@ uint32_t Context::grpcStream(const envoy::api::v2::core::GrpcService& grpc_servi
     token = next_grpc_token_ += 2;
   }
   auto& handler = grpc_stream_[token];
-  auto stream =
+  auto grpc_client =
       clusterManager()
           .grpcAsyncClientManager()
           .factoryForGrpcService(grpc_service, wasm_->scope_, true /* skip_cluster_check */)
-          ->create()
-          ->startRaw(service_name, method_name, handler);
-  if (!stream) {
+          ->create();
+  auto grpc_stream = grpc_client->startRaw(service_name, method_name, handler);
+  if (!grpc_stream) {
     grpc_stream_.erase(token);
     return 0;
   }
   handler.context = this;
   handler.token = token;
+  handler.client = std::move(grpc_client);
+  handler.stream = grpc_stream;
   return token;
 }
 

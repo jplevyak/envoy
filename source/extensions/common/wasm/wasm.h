@@ -156,6 +156,7 @@ struct GrpcCallClientHandler : public Grpc::RawAsyncRequestCallbacks {
 
   Context* context;
   uint32_t token;
+  Grpc::AsyncClientPtr client;
   Grpc::AsyncRequest* request;
 };
 
@@ -169,6 +170,7 @@ struct GrpcStreamClientHandler : public Grpc::RawAsyncStreamCallbacks {
 
   Context* context;
   uint32_t token;
+  Grpc::AsyncClientPtr client;
   Grpc::AsyncStream* stream;
 };
 
