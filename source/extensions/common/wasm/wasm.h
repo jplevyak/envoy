@@ -110,6 +110,7 @@ using WasmCallback9Int = uint32_t (*)(void*, uint32_t, uint32_t, uint32_t, uint3
 using WasmCallback_Zjl = void (*)(void*, uint32_t, int64_t);
 using WasmCallback_Zjm = void (*)(void*, uint32_t, uint64_t);
 using WasmCallback_mjj = uint64_t (*)(void*, uint32_t);
+using WasmCallback_mj = uint64_t (*)(void*);
 
 // Sadly we don't have enum class inheritance in c++-14.
 enum class StreamType : uint32_t { Request = 0, Response = 1, MAX = 1 };
@@ -223,7 +224,8 @@ public:
   //
   virtual void scriptLog(spdlog::level::level_enum level, absl::string_view message);
   virtual void setTickPeriod(std::chrono::milliseconds tick_period);
-
+  virtual uint64_t getCurrentTimeNanoseconds();
+  
   //
   // AccessLog::Instance
   //
@@ -530,6 +532,7 @@ private:
   Event::TimerPtr timer_;
   Stats::ScopeSharedPtr
       owned_scope_; // When scope_ is not owned by a higher level (e.g. for WASM services).
+  TimeSource& time_source_;
 
   // Calls into the VM.
   WasmCall0Void onStart_;
@@ -621,9 +624,8 @@ public:
   // Make a new intrinsic module (e.g. for Emscripten support).
   virtual void makeModule(absl::string_view name) PURE;
 
-  // Get the contents of the user section with the given name or "" if it does not exist and
-  // optionally a presence indicator.
-  virtual absl::string_view getUserSection(absl::string_view name, bool* present = nullptr) PURE;
+  // Get the contents of the user section with the given name or "" if it does not exist.
+  virtual absl::string_view getUserSection(absl::string_view name) PURE;
 
   // Get typed function exported by the WASM module.
   virtual void getFunction(absl::string_view functionName, WasmCall0Void* f) PURE;
@@ -675,7 +677,9 @@ public:
   virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
                                 WasmCallback_Zjm f) PURE;
   virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback_mjj f) PURE;
+                                WasmCallback_mjj f) PURE;  
+  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
+                                WasmCallback_mj f) PURE;
 
   // Register typed value exported by the host environment.
   virtual std::unique_ptr<Global<double>>
