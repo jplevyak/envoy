@@ -3964,7 +3964,9 @@
     (param $0 i32)
     (param $1 i32)
     (result i32)
-    i32.const 0
+    local.get $1
+    i32.const 5
+    i32.eq
     )
   
   (func $__ZNSt3__212__hash_tableINS_17__hash_value_typeIjNS_8functionIFvNS_10unique_ptrI8WasmDataNS_14default_deleteIS4_EEEES7_S7_EEEEENS_22__unordered_map_hasherIjSA_NS_4hashIjEELb1EEENS_21__unordered_map_equalIjSA_NS_8equal_toIjEELb1EEENS_9allocatorISA_EEE14__erase_uniqueIjEEmRKT_ (type $6)

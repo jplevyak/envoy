@@ -3755,7 +3755,9 @@
     (param $0 i32)
     (param $1 i32)
     (result i32)
-    i32.const 0
+    local.get $1
+    i32.const 5
+    i32.eq
     )
   
   (func $__ZN6google8protobuf8internal14ArenaStringPtr14CreateInstanceEPNS0_5ArenaEPKNSt3__212basic_stringIcNS5_11char_traitsIcEENS5_9allocatorIcEEEE (type $2)
