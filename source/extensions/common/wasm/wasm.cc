@@ -9,6 +9,7 @@
 #include "envoy/common/exception.h"
 #include "envoy/config/wasm/v2/wasm.pb.validate.h"
 #include "envoy/http/codes.h"
+#include "envoy/local_info/local_info.h"
 #include "envoy/server/wasm.h"
 #include "envoy/thread_local/thread_local.h"
 
@@ -202,7 +203,7 @@ void getProtocolHandler(void* raw_context, uint32_t type, uint32_t value_ptr_ptr
     return;
   auto context = WASM_CONTEXT(raw_context);
   context->wasm()->copyToPointerSize(context->getProtocol(static_cast<StreamType>(type)),
-                                    value_ptr_ptr, value_size_ptr);
+                                     value_ptr_ptr, value_size_ptr);
 }
 
 // Metadata
@@ -469,47 +470,100 @@ uint64_t getMetricHandler(void* raw_context, uint32_t metric_id) {
   return context->getMetric(metric_id);
 }
 
-uint32_t getTotalMemoryHandler(void*) { return 0x7FFFFFFF; }
+uint32_t _emscripten_memcpy_bigHandler(void*, uint32_t, uint32_t, uint32_t) {
+  throw WasmException("emscripten emscripten_memcpy_big");
+}
+
 uint32_t _emscripten_get_heap_sizeHandler(void*) { return 0x7FFFFFFF; }
+
+uint32_t _emscripten_resize_heapHandler(void*, uint32_t) {
+  throw WasmException("emscripten emscripten_resize_heap");
+}
+
+uint32_t abortOnCannotGrowMemoryHandler(void*) {
+  throw WasmException("emscripten abortOnCannotGrowMemory");
+}
+
+void abortHandler(void*, uint32_t) { throw WasmException("emscripten abort"); }
+
+void _abortHandler(void*) { throw WasmException("emscripten abort"); }
+
 void _llvm_trapHandler(void*) { throw WasmException("emscripten llvm_trap"); }
+
+void ___assert_failHandler(void*, uint32_t, uint32_t, uint32_t, uint32_t) {
+  throw WasmException("emscripten assert_fail");
+}
+
+void ___cxa_throwHandler(void*, uint32_t, uint32_t, uint32_t) {
+  throw WasmException("emscripten cxa_throw");
+}
+
 void ___cxa_pure_virtualHandler(void*) { throw WasmException("emscripten cxa_pure_virtual"); }
+
+uint32_t ___cxa_allocate_exceptionHandler(void*, uint32_t) {
+  throw WasmException("emscripten cxa_allocate_exception");
+}
+
 uint32_t ___call_mainHandler(void*, uint32_t, uint32_t) {
   throw WasmException("emscripten call_main");
-  return 0;
 }
+
 uint32_t ___clock_gettimeHandler(void*, uint32_t, uint32_t) {
   throw WasmException("emscripten clock_gettime");
-  return 0;
 }
+
+void ___lockHandler(void*, uint32_t) { throw WasmException("emscripten lock"); }
+
+void ___unlockHandler(void*, uint32_t) { throw WasmException("emscripten unlock"); }
+
+uint32_t ___syscall6Handler(void*, uint32_t, uint32_t) {
+  throw WasmException("emscripten syscall6");
+}
+
+uint32_t ___syscall54Handler(void*, uint32_t, uint32_t) {
+  throw WasmException("emscripten syscall54");
+}
+
+uint32_t ___syscall140Handler(void*, uint32_t, uint32_t) {
+  throw WasmException("emscripten syscall140");
+}
+
+uint32_t ___syscall146Handler(void*, uint32_t, uint32_t) {
+  throw WasmException("emscripten syscall146");
+}
+
+void ___setErrNoHandler(void*, uint32_t) { throw WasmException("emscripten setErrNo"); }
+
 // pthread_equal is required to return 0 by the protobuf libarary.
-uint32_t _pthread_equalHandler(void*, uint32_t,
-                               uint32_t) { /* throw WasmException("emscripten pthread_equal"); */
+uint32_t _pthread_equalHandler(void*, uint32_t, uint32_t) {
+  /* throw WasmException("emscripten pthread_equal"); */
   return 0;
 }
+
 uint32_t _pthread_mutex_destroyHandler(void*, uint32_t) {
   throw WasmException("emscripten pthread_mutex_destroy");
-  return 0;
 }
-uint32_t _pthread_cond_waitHandler(void*, uint32_t) {
+
+uint32_t _pthread_cond_waitHandler(void*, uint32_t, uint32_t) {
   throw WasmException("emscripten pthread_cond_wait");
-  return 0;
 }
+
 uint32_t _pthread_getspecificHandler(void*, uint32_t) {
   throw WasmException("emscripten pthread_getspecific");
-  return 0;
 }
-uint32_t _pthread_key_createHandler(void*, uint32_t) {
+
+uint32_t _pthread_key_createHandler(void*, uint32_t, uint32_t) {
   throw WasmException("emscripten pthread_key_create");
-  return 0;
 }
-uint32_t _pthread_onceHandler(void*, uint32_t) {
+
+uint32_t _pthread_onceHandler(void*, uint32_t, uint32_t) {
   throw WasmException("emscripten pthread_once");
-  return 0;
 }
-uint32_t _pthread_setspecificHandler(void*, uint32_t) {
+
+uint32_t _pthread_setspecificHandler(void*, uint32_t, uint32_t) {
   throw WasmException("emscripten pthread_setspecific");
-  return 0;
 }
+
 void setTempRet0Handler(void*, uint32_t) { throw WasmException("emscripten setTempRet0"); }
 
 void setTickPeriodMillisecondsHandler(void* raw_context, uint32_t tick_period_milliseconds) {
@@ -861,6 +915,8 @@ const ProtobufWkt::Struct* Context::getMetadataStructProto(MetadataType type,
     return getRouteMetadataStructProto(decoder_callbacks_);
   case MetadataType::ResponseRoute:
     return getRouteMetadataStructProto(encoder_callbacks_);
+  case MetadataType::Node:
+    return &wasm_->local_info_.node().metadata();
   default: {
     auto streamInfo = getConstStreamInfo(type);
     if (!streamInfo) {
@@ -1164,9 +1220,10 @@ uint64_t Context::getMetric(uint32_t metric_id) {
 
 Wasm::Wasm(absl::string_view vm, absl::string_view id, absl::string_view initial_configuration,
            Upstream::ClusterManager& cluster_manager, Event::Dispatcher& dispatcher,
-           Stats::Scope& scope, Stats::ScopeSharedPtr owned_scope)
+           Stats::Scope& scope, const LocalInfo::LocalInfo& local_info,
+           Stats::ScopeSharedPtr owned_scope)
     : cluster_manager_(cluster_manager), dispatcher_(dispatcher), scope_(scope),
-      owned_scope_(owned_scope), time_source_(dispatcher.timeSystem()),
+      local_info_(local_info), owned_scope_(owned_scope), time_source_(dispatcher.timeSystem()),
       initial_configuration_(initial_configuration) {
   wasm_vm_ = Common::Wasm::createWasmVm(vm);
   id_ = std::string(id);
@@ -1175,12 +1232,26 @@ Wasm::Wasm(absl::string_view vm, absl::string_view id, absl::string_view initial
 void Wasm::registerCallbacks() {
 #define _REGISTER(_fn) wasm_vm_->registerCallback("envoy", #_fn, &_fn##Handler);
   if (is_emscripten_) {
-    _REGISTER(getTotalMemory);
+    _REGISTER(_emscripten_memcpy_big);
     _REGISTER(_emscripten_get_heap_size);
+    _REGISTER(_emscripten_resize_heap);
+    _REGISTER(abortOnCannotGrowMemory);
+    _REGISTER(abort);
+    _REGISTER(_abort);
     _REGISTER(_llvm_trap);
+    _REGISTER(___assert_fail);
+    _REGISTER(___cxa_throw);
     _REGISTER(___cxa_pure_virtual);
+    _REGISTER(___cxa_allocate_exception);
     _REGISTER(___call_main);
     _REGISTER(___clock_gettime);
+    _REGISTER(___lock);
+    _REGISTER(___unlock);
+    _REGISTER(___syscall6);
+    _REGISTER(___syscall54);
+    _REGISTER(___syscall140);
+    _REGISTER(___syscall146);
+    _REGISTER(___setErrNo);
     _REGISTER(_pthread_equal);
     _REGISTER(_pthread_mutex_destroy);
     _REGISTER(_pthread_cond_wait);
@@ -1252,6 +1323,10 @@ void Wasm::registerCallbacks() {
 
 void Wasm::establishEnvironment() {
   if (is_emscripten_) {
+    emscripten_table_base_ = wasm_vm_->makeGlobal("env", "__table_base", static_cast<uint32_t>(0));
+    emscripten_dynamictop_ =
+        wasm_vm_->makeGlobal("env", "DYNAMICTOP_PTR", static_cast<uint32_t>(128 * 64 * 1024));
+
     wasm_vm_->makeModule("global");
     emscripten_NaN_ = wasm_vm_->makeGlobal("global", "NaN", std::nan("0"));
     emscripten_Infinity_ =
@@ -1292,8 +1367,8 @@ void Wasm::getFunctions() {
 
 Wasm::Wasm(const Wasm& wasm, Event::Dispatcher& dispatcher)
     : std::enable_shared_from_this<Wasm>(wasm), cluster_manager_(wasm.cluster_manager_),
-      dispatcher_(dispatcher), scope_(wasm.scope_), owned_scope_(wasm.owned_scope_),
-      time_source_(dispatcher.timeSystem()) {
+      dispatcher_(dispatcher), scope_(wasm.scope_), local_info_(wasm.local_info_),
+      owned_scope_(wasm.owned_scope_), time_source_(dispatcher.timeSystem()) {
   wasm_vm_ = wasm.wasmVm()->clone();
   general_context_ = createContext();
   getFunctions();
@@ -1519,9 +1594,10 @@ std::shared_ptr<Wasm> createWasm(absl::string_view id,
                                  const envoy::config::wasm::v2::VmConfig& vm_config,
                                  Upstream::ClusterManager& cluster_manager,
                                  Event::Dispatcher& dispatcher, Api::Api& api, Stats::Scope& scope,
+                                 const LocalInfo::LocalInfo& local_info,
                                  Stats::ScopeSharedPtr scope_ptr) {
   auto wasm = std::make_shared<Wasm>(vm_config.vm(), id, vm_config.initial_configuration(),
-                                     cluster_manager, dispatcher, scope, scope_ptr);
+                                     cluster_manager, dispatcher, scope, local_info, scope_ptr);
   const auto& code = Config::DataSource::read(vm_config.code(), true, api);
   const auto& path = Config::DataSource::getPath(vm_config.code())
                          .value_or(code.empty() ? EMPTY_STRING : INLINE_STRING);
@@ -1543,7 +1619,7 @@ std::shared_ptr<Wasm> createThreadLocalWasm(Wasm& base_wasm, absl::string_view c
   } else {
     wasm = std::make_shared<Wasm>(base_wasm.wasmVm()->vm(), base_wasm.id(),
                                   base_wasm.initial_configuration(), base_wasm.clusterManager(),
-                                  dispatcher, base_wasm.scope());
+                                  dispatcher, base_wasm.scope(), base_wasm.localInfo());
     if (!wasm->initialize(base_wasm.code(), base_wasm.id(), base_wasm.allow_precompiled())) {
       throw WasmException("Failed to initialize WASM code");
     }
