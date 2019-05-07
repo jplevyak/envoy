@@ -15,6 +15,9 @@ class WasmVmValues {
 public:
   // WAVM (https://github.com/WAVM/WAVM) Wasm VM.
   const std::string Wavm = "envoy.wasm.vm.wavm";
+  // Null sandbox: modules must be compiled into envoy and registered name is given in the
+  // DataSource.inline_string.
+  const std::string Null = "envoy.wasm.vm.null";
 };
 
 typedef ConstSingleton<WasmVmValues> WasmVmNames;

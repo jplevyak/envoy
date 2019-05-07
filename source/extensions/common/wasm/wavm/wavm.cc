@@ -47,6 +47,14 @@
 using namespace WAVM;
 using namespace WAVM::IR;
 
+namespace WAVM {
+namespace IR {
+template <> constexpr ValueType inferValueType<Envoy::Extensions::Common::Wasm::Word>() {
+  return ValueType::i32;
+}
+} // namespace IR
+} // namespace WAVM
+
 namespace Envoy {
 namespace Extensions {
 namespace Common {
@@ -70,6 +78,16 @@ namespace Wavm {
 struct Wavm;
 
 namespace {
+
+struct WasmUntaggedValue : public WAVM::IR::UntaggedValue {
+  WasmUntaggedValue(I32 inI32) { i32 = inI32; }
+  WasmUntaggedValue(I64 inI64) { i64 = inI64; }
+  WasmUntaggedValue(U32 inU32) { u32 = inU32; }
+  WasmUntaggedValue(Word w) { u32 = static_cast<U32>(w.u64); }
+  WasmUntaggedValue(U64 inU64) { u64 = inU64; }
+  WasmUntaggedValue(F32 inF32) { f32 = inF32; }
+  WasmUntaggedValue(F64 inF64) { f64 = inF64; }
+};
 
 using Context = Common::Wasm::Context; // Shadowing WAVM::Runtime::Context.
 
@@ -177,20 +195,6 @@ bool loadModule(const std::string& code, IR::Module& outModule) {
 
 } // namespace
 
-struct EnvoyHandlerBase {
-  virtual ~EnvoyHandlerBase() {}
-};
-
-template <typename F> struct EnvoyHandler : EnvoyHandlerBase {
-  ~EnvoyHandler() override {}
-  explicit EnvoyHandler(F ahandler) : handler(ahandler) {}
-  F handler;
-};
-
-template <typename F> EnvoyHandlerBase* MakeEnvoyHandler(F handler) {
-  return new EnvoyHandler<F>(handler);
-}
-
 struct WavmGlobalBase {
   WAVM::Runtime::Global* global_ = nullptr;
 };
@@ -224,9 +228,10 @@ struct Wavm : public WasmVm {
   bool load(const std::string& code, bool allow_precompiled) override;
   void link(absl::string_view debug_name, bool needs_emscripten) override;
   void start(Context* context) override;
-  absl::string_view getMemory(uint32_t pointer, uint32_t size) override;
-  bool getMemoryOffset(void* host_pointer, uint32_t* vm_pointer) override;
-  bool setMemory(uint32_t pointer, uint32_t size, void* data) override;
+  absl::string_view getMemory(uint64_t pointer, uint64_t size) override;
+  bool getMemoryOffset(void* host_pointer, uint64_t* vm_pointer) override;
+  bool setMemory(uint64_t pointer, uint64_t size, void* data) override;
+  bool setWord(uint64_t pointer, uint64_t data) override;
   void makeModule(absl::string_view name) override;
   absl::string_view getUserSection(absl::string_view name) override;
 
@@ -239,6 +244,9 @@ struct Wavm : public WasmVm {
   _GET_FUNCTION(WasmCall0Void);
   _GET_FUNCTION(WasmCall1Void);
   _GET_FUNCTION(WasmCall2Void);
+  _GET_FUNCTION(WasmCall3Void);
+  _GET_FUNCTION(WasmCall4Void);
+  _GET_FUNCTION(WasmCall5Void);
   _GET_FUNCTION(WasmCall8Void);
   _GET_FUNCTION(WasmCall1Int);
   _GET_FUNCTION(WasmCall3Int);
@@ -259,7 +267,11 @@ struct Wavm : public WasmVm {
   _REGISTER_CALLBACK(WasmCallback1Int);
   _REGISTER_CALLBACK(WasmCallback2Int);
   _REGISTER_CALLBACK(WasmCallback3Int);
+  _REGISTER_CALLBACK(WasmCallback4Int);
   _REGISTER_CALLBACK(WasmCallback5Int);
+  _REGISTER_CALLBACK(WasmCallback6Int);
+  _REGISTER_CALLBACK(WasmCallback7Int);
+  _REGISTER_CALLBACK(WasmCallback8Int);
   _REGISTER_CALLBACK(WasmCallback9Int);
   _REGISTER_CALLBACK(WasmCallback_Zjl);
   _REGISTER_CALLBACK(WasmCallback_Zjm);
@@ -415,13 +427,13 @@ void Wavm::start(Context* context) {
   }
 }
 
-absl::string_view Wavm::getMemory(uint32_t pointer, uint32_t size) {
+absl::string_view Wavm::getMemory(uint64_t pointer, uint64_t size) {
   return {reinterpret_cast<char*>(
               WAVM::Runtime::memoryArrayPtr<U8>(memory_, pointer, static_cast<U64>(size))),
           static_cast<size_t>(size)};
 }
 
-bool Wavm::getMemoryOffset(void* host_pointer, uint32_t* vm_pointer) {
+bool Wavm::getMemoryOffset(void* host_pointer, uint64_t* vm_pointer) {
   intptr_t offset = (static_cast<uint8_t*>(host_pointer) - memory_base_);
   if (offset < 0) {
     return false;
@@ -429,15 +441,27 @@ bool Wavm::getMemoryOffset(void* host_pointer, uint32_t* vm_pointer) {
   if (static_cast<size_t>(offset) > memory_size_) {
     return false;
   }
-  *vm_pointer = static_cast<uint32_t>(offset);
+  *vm_pointer = static_cast<uint64_t>(offset);
   return true;
 }
 
-bool Wavm::setMemory(uint32_t pointer, uint32_t size, void* data) {
+bool Wavm::setMemory(uint64_t pointer, uint64_t size, void* data) {
   auto p = reinterpret_cast<char*>(
       WAVM::Runtime::memoryArrayPtr<U8>(memory_, pointer, static_cast<U64>(size)));
   if (p) {
     memcpy(p, data, size);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool Wavm::setWord(uint64_t pointer, uint64_t data) {
+  auto p = reinterpret_cast<char*>(
+      WAVM::Runtime::memoryArrayPtr<U8>(memory_, pointer, static_cast<U64>(sizeof(uint32_t))));
+  if (p) {
+    uint32_t data32 = static_cast<uint32_t>(data);
+    memcpy(p, &data32, sizeof(uint32_t));
     return true;
   } else {
     return false;
@@ -579,7 +603,7 @@ void getFunctionWavmReturn(WasmVm* vm, absl::string_view functionName,
     throw WasmVmException(fmt::format("Bad function signature for: {}", functionName));
   }
   *function = [wavm, f](Context* context, Args... args) -> R {
-    UntaggedValue values[] = {args...};
+    WasmUntaggedValue values[] = {args...};
     CALL_WITH_CONTEXT_RETURN(invokeFunctionUnchecked(wavm->context_, f, &values[0]), context,
                              uint32_t, i32);
   };
@@ -602,7 +626,7 @@ void getFunctionWavmReturn(WasmVm* vm, absl::string_view functionName,
     throw WasmVmException(fmt::format("Bad function signature for: {}", functionName));
   }
   *function = [wavm, f](Context* context, Args... args) -> R {
-    UntaggedValue values[] = {args...};
+    WasmUntaggedValue values[] = {args...};
     CALL_WITH_CONTEXT(invokeFunctionUnchecked(wavm->context_, f, &values[0]), context);
   };
 }
