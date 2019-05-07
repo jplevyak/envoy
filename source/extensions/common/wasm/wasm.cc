@@ -400,7 +400,6 @@ uint64_t getMetricHandler(void* raw_context, uint32_t metric_id) {
   return context->getMetric(metric_id);
 }
 
-
 uint32_t grpcCallHandler(void* raw_context, uint32_t service_ptr, uint32_t service_size,
                          uint32_t service_name_ptr, uint32_t service_name_size,
                          uint32_t method_name_ptr, uint32_t method_name_size, uint32_t request_ptr,
@@ -449,7 +448,7 @@ void grpcSendHandler(void* raw_context, uint32_t token, uint32_t message_ptr, ui
   context->grpcSend(token, message, end_stream);
 }
 
-uint32_t getTotalMemoryHandler(void*) { return 0x7FFFFFFF; }
+// uint32_t getTotalMemoryHandler(void*) { return 0x7FFFFFFF; }
 
 uint32_t _emscripten_memcpy_bigHandler(void*, uint32_t, uint32_t, uint32_t) {
   throw WasmException("emscripten emscripten_memcpy_big");
@@ -852,8 +851,9 @@ uint32_t Context::grpcCall(const envoy::api::v2::core::GrpcService& grpc_service
           .grpcAsyncClientManager()
           .factoryForGrpcService(grpc_service, wasm_->scope_, true /* skip_cluster_check */)
           ->create();
-  // NB: this call causes the onCreateInitialMetadata callback to occur inline *before* this call returns.
-  // Consequently the grpc_request is not available.  Attempting to close or reset from that callback will fail.
+  // NB: this call causes the onCreateInitialMetadata callback to occur inline *before* this call
+  // returns. Consequently the grpc_request is not available. Attempting to close or reset from that
+  // callback will fail.
   auto grpc_request =
       grpc_client->sendRaw(service_name, method_name, std::make_unique<Buffer::OwnedImpl>(request),
                            handler, Tracing::NullSpan::instance(), timeout);
@@ -890,8 +890,9 @@ uint32_t Context::grpcStream(const envoy::api::v2::core::GrpcService& grpc_servi
           .grpcAsyncClientManager()
           .factoryForGrpcService(grpc_service, wasm_->scope_, true /* skip_cluster_check */)
           ->create();
-  // NB: this call causes the onCreateInitialMetadata callback to occur inline *before* this call returns.
-  // Consequently the grpc_stream is not available.  Attempting to close or reset from that callback will fail.
+  // NB: this call causes the onCreateInitialMetadata callback to occur inline *before* this call
+  // returns. Consequently the grpc_stream is not available. Attempting to close or reset from that
+  // callback will fail.
   auto grpc_stream = grpc_client->startRaw(service_name, method_name, handler);
   if (!grpc_stream) {
     grpc_stream_.erase(token);

@@ -1285,14 +1285,13 @@ inline void GrpcStreamHandlerBase::send(std::string_view message, bool end_of_st
 }
 
 inline void Context::onGrpcCreateInitialMetadata(uint32_t token) {
-  {
+  if (IsGrpcCallToken(token)) {
     auto it = grpc_calls_.find(token);
     if (it != grpc_calls_.end()) {
       it->second->onCreateInitialMetadata();
       return;
     }
-  }
-  {
+  } else {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
       it->second->onCreateInitialMetadata();
@@ -1302,7 +1301,7 @@ inline void Context::onGrpcCreateInitialMetadata(uint32_t token) {
 }
 
 inline void Context::onGrpcReceiveInitialMetadata(uint32_t token) {
-  {
+  if (!IsGrpcCallToken(token)) {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
       it->second->onReceiveInitialMetadata();
@@ -1312,7 +1311,7 @@ inline void Context::onGrpcReceiveInitialMetadata(uint32_t token) {
 }
 
 inline void Context::onGrpcReceiveTrailingMetadata(uint32_t token) {
-  {
+  if (!IsGrpcCallToken(token)) {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
       it->second->onReceiveTrailingMetadata();
@@ -1322,23 +1321,24 @@ inline void Context::onGrpcReceiveTrailingMetadata(uint32_t token) {
 }
 
 inline void Context::onGrpcReceive(uint32_t token, std::unique_ptr<WasmData> message) {
-  {
-    auto it = simple_grpc_calls_.find(token);
-    if (it != simple_grpc_calls_.end()) {
-      it->second(GrpcStatus::OK, std::move(message));
-      simple_grpc_calls_.erase(token);
-      return;
+  if (IsGrpcCallToken(token)) {
+    {
+      auto it = simple_grpc_calls_.find(token);
+      if (it != simple_grpc_calls_.end()) {
+        it->second(GrpcStatus::OK, std::move(message));
+        simple_grpc_calls_.erase(token);
+        return;
+      }
     }
-  }
-  {
-    auto it = grpc_calls_.find(token);
-    if (it != grpc_calls_.end()) {
-      it->second->onSuccess(std::move(message));
-      grpc_calls_.erase(token);
-      return;
+    {
+      auto it = grpc_calls_.find(token);
+      if (it != grpc_calls_.end()) {
+        it->second->onSuccess(std::move(message));
+        grpc_calls_.erase(token);
+        return;
+      }
     }
-  }
-  {
+  } else {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
       it->second->onReceive(std::move(message));
@@ -1349,23 +1349,24 @@ inline void Context::onGrpcReceive(uint32_t token, std::unique_ptr<WasmData> mes
 }
 
 inline void Context::onGrpcClose(uint32_t token, GrpcStatus status, std::unique_ptr<WasmData> message) {
-  {
-    auto it = simple_grpc_calls_.find(token);
-    if (it != simple_grpc_calls_.end()) {
-      it->second(status, std::move(message));
-      simple_grpc_calls_.erase(token);
-      return;
+  if (IsGrpcCallToken(token)) {
+    {
+      auto it = simple_grpc_calls_.find(token);
+      if (it != simple_grpc_calls_.end()) {
+        it->second(status, std::move(message));
+        simple_grpc_calls_.erase(token);
+        return;
+      }
     }
-  }
-  {
-    auto it = grpc_calls_.find(token);
-    if (it != grpc_calls_.end()) {
-      it->second->onFailure(status, std::move(message));
-      grpc_calls_.erase(token);
-      return;
+    {
+      auto it = grpc_calls_.find(token);
+      if (it != grpc_calls_.end()) {
+        it->second->onFailure(status, std::move(message));
+        grpc_calls_.erase(token);
+        return;
+      }
     }
-  }
-  {
+  } else {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
       it->second->onRemoteClose(status, std::move(message));
