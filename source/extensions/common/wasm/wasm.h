@@ -123,7 +123,7 @@ enum class MetadataType : uint32_t {
   Node = 5,
   MAX = 5
 };
-enum class MapType : uint32_t {
+enum class HeaderMapType : uint32_t {
   RequestHeaders = 0,
   RequestTrailers = 1,
   ResponseHeaders = 2,
@@ -296,13 +296,15 @@ public:
   virtual bool setSharedData(absl::string_view key, absl::string_view value, uint32_t cas);
 
   // Header/Trailer/Metadata Maps
-  virtual void addMapValue(MapType type, absl::string_view key, absl::string_view value);
-  virtual absl::string_view getMapValue(MapType type, absl::string_view key);
-  virtual Pairs getMapPairs(MapType type);
-  virtual void setMapPairs(MapType type, const Pairs& pairs);
+  virtual void addHeaderMapValue(HeaderMapType type, absl::string_view key,
+                                 absl::string_view value);
+  virtual absl::string_view getHeaderMapValue(HeaderMapType type, absl::string_view key);
+  virtual Pairs getHeaderMapPairs(HeaderMapType type);
+  virtual void setHeaderMapPairs(HeaderMapType type, const Pairs& pairs);
 
-  virtual void removeMapValue(MapType type, absl::string_view key);
-  virtual void replaceMapValue(MapType type, absl::string_view key, absl::string_view value);
+  virtual void removeHeaderMapValue(HeaderMapType type, absl::string_view key);
+  virtual void replaceHeaderMapValue(HeaderMapType type, absl::string_view key,
+                                     absl::string_view value);
 
   // Body Buffer
   virtual absl::string_view getRequestBodyBufferBytes(uint32_t start, uint32_t length);
@@ -368,8 +370,8 @@ protected:
 
   const ProtobufWkt::Struct* getMetadataStructProto(MetadataType type, absl::string_view name = "");
 
-  Http::HeaderMap* getMap(MapType type);
-  const Http::HeaderMap* getConstMap(MapType type);
+  Http::HeaderMap* getMap(HeaderMapType type);
+  const Http::HeaderMap* getConstMap(HeaderMapType type);
 
   Wasm* const wasm_;
   const uint32_t id_;

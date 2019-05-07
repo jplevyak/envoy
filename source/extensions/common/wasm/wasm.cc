@@ -290,63 +290,66 @@ uint32_t setSharedDataHandler(void* raw_context, uint32_t key_ptr, uint32_t key_
 }
 
 // Header/Trailer/Metadata Maps
-void addMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size,
-                        uint32_t value_ptr, uint32_t value_size) {
-  if (type > static_cast<uint32_t>(MapType::MAX)) {
+void addHeaderMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size,
+                              uint32_t value_ptr, uint32_t value_size) {
+  if (type > static_cast<uint32_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  context->addMapValue(static_cast<MapType>(type), context->wasmVm()->getMemory(key_ptr, key_size),
-                       context->wasmVm()->getMemory(value_ptr, value_size));
+  context->addHeaderMapValue(static_cast<HeaderMapType>(type),
+                             context->wasmVm()->getMemory(key_ptr, key_size),
+                             context->wasmVm()->getMemory(value_ptr, value_size));
 }
 
-void getMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size,
-                        uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
-  if (type > static_cast<uint32_t>(MapType::MAX)) {
+void getHeaderMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size,
+                              uint32_t value_ptr_ptr, uint32_t value_size_ptr) {
+  if (type > static_cast<uint32_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getMapValue(static_cast<MapType>(type),
-                                     context->wasmVm()->getMemory(key_ptr, key_size));
+  auto result = context->getHeaderMapValue(static_cast<HeaderMapType>(type),
+                                           context->wasmVm()->getMemory(key_ptr, key_size));
   context->wasm()->copyToPointerSize(result, value_ptr_ptr, value_size_ptr);
 }
 
-void replaceMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size,
-                            uint32_t value_ptr, uint32_t value_size) {
-  if (type > static_cast<uint32_t>(MapType::MAX)) {
+void replaceHeaderMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr,
+                                  uint32_t key_size, uint32_t value_ptr, uint32_t value_size) {
+  if (type > static_cast<uint32_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  context->replaceMapValue(static_cast<MapType>(type),
-                           context->wasmVm()->getMemory(key_ptr, key_size),
-                           context->wasmVm()->getMemory(value_ptr, value_size));
+  context->replaceHeaderMapValue(static_cast<HeaderMapType>(type),
+                                 context->wasmVm()->getMemory(key_ptr, key_size),
+                                 context->wasmVm()->getMemory(value_ptr, value_size));
 }
 
-void removeMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr, uint32_t key_size) {
-  if (type > static_cast<uint32_t>(MapType::MAX)) {
+void removeHeaderMapValueHandler(void* raw_context, uint32_t type, uint32_t key_ptr,
+                                 uint32_t key_size) {
+  if (type > static_cast<uint32_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  context->removeMapValue(static_cast<MapType>(type),
-                          context->wasmVm()->getMemory(key_ptr, key_size));
+  context->removeHeaderMapValue(static_cast<HeaderMapType>(type),
+                                context->wasmVm()->getMemory(key_ptr, key_size));
 }
 
-void getMapPairsHandler(void* raw_context, uint32_t type, uint32_t ptr_ptr, uint32_t size_ptr) {
-  if (type > static_cast<uint32_t>(MapType::MAX)) {
+void getHeaderMapPairsHandler(void* raw_context, uint32_t type, uint32_t ptr_ptr,
+                              uint32_t size_ptr) {
+  if (type > static_cast<uint32_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getMapPairs(static_cast<MapType>(type));
+  auto result = context->getHeaderMapPairs(static_cast<HeaderMapType>(type));
   getPairs(context, result, ptr_ptr, size_ptr);
 }
 
-void setMapPairsHandler(void* raw_context, uint32_t type, uint32_t ptr, uint32_t size) {
-  if (type > static_cast<uint32_t>(MapType::MAX)) {
+void setHeaderMapPairsHandler(void* raw_context, uint32_t type, uint32_t ptr, uint32_t size) {
+  if (type > static_cast<uint32_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  context->setMapPairs(static_cast<MapType>(type),
-                       toPairs(context->wasmVm()->getMemory(ptr, size)));
+  context->setHeaderMapPairs(static_cast<HeaderMapType>(type),
+                             toPairs(context->wasmVm()->getMemory(ptr, size)));
 }
 
 // Body Buffer
@@ -619,56 +622,57 @@ bool Context::setSharedData(absl::string_view key, absl::string_view value, uint
 }
 
 // Header/Trailer/Metadata Maps.
-Http::HeaderMap* Context::getMap(MapType type) {
+Http::HeaderMap* Context::getMap(HeaderMapType type) {
   switch (type) {
-  case MapType::RequestHeaders:
+  case HeaderMapType::RequestHeaders:
     return request_headers_;
-  case MapType::RequestTrailers:
+  case HeaderMapType::RequestTrailers:
     return request_trailers_;
-  case MapType::ResponseHeaders:
+  case HeaderMapType::ResponseHeaders:
     return response_headers_;
-  case MapType::ResponseTrailers:
+  case HeaderMapType::ResponseTrailers:
     return response_trailers_;
-  case MapType::GrpcCreateInitialMetadata:
+  case HeaderMapType::GrpcCreateInitialMetadata:
     return grpc_create_initial_metadata_;
   default:
     return nullptr;
   }
 }
 
-const Http::HeaderMap* Context::getConstMap(MapType type) {
+const Http::HeaderMap* Context::getConstMap(HeaderMapType type) {
   switch (type) {
-  case MapType::RequestHeaders:
+  case HeaderMapType::RequestHeaders:
     if (access_log_request_headers_) {
       return access_log_request_headers_;
     }
     return request_headers_;
-  case MapType::RequestTrailers:
+  case HeaderMapType::RequestTrailers:
     if (access_log_request_trailers_) {
       return access_log_request_trailers_;
     }
     return request_trailers_;
-  case MapType::ResponseHeaders:
+  case HeaderMapType::ResponseHeaders:
     if (access_log_response_headers_) {
       return access_log_response_headers_;
     }
     return response_headers_;
-  case MapType::ResponseTrailers:
+  case HeaderMapType::ResponseTrailers:
     if (access_log_response_trailers_) {
       return access_log_response_trailers_;
     }
     return response_trailers_;
-  case MapType::GrpcCreateInitialMetadata:
+  case HeaderMapType::GrpcCreateInitialMetadata:
     return grpc_create_initial_metadata_;
-  case MapType::GrpcReceiveInitialMetadata:
+  case HeaderMapType::GrpcReceiveInitialMetadata:
     return grpc_receive_initial_metadata_.get();
-  case MapType::GrpcReceiveTrailingMetadata:
+  case HeaderMapType::GrpcReceiveTrailingMetadata:
     return grpc_receive_trailing_metadata_.get();
   }
   return nullptr;
 }
 
-void Context::addMapValue(MapType type, absl::string_view key, absl::string_view value) {
+void Context::addHeaderMapValue(HeaderMapType type, absl::string_view key,
+                                absl::string_view value) {
   auto map = getMap(type);
   if (!map)
     return;
@@ -676,7 +680,7 @@ void Context::addMapValue(MapType type, absl::string_view key, absl::string_view
   map->addCopy(lower_key, std::string(value));
 }
 
-absl::string_view Context::getMapValue(MapType type, absl::string_view key) {
+absl::string_view Context::getHeaderMapValue(HeaderMapType type, absl::string_view key) {
   auto map = getConstMap(type);
   if (!map)
     return "";
@@ -703,9 +707,9 @@ Pairs headerMapToPairs(const Http::HeaderMap* map) {
   return pairs;
 }
 
-Pairs Context::getMapPairs(MapType type) { return headerMapToPairs(getConstMap(type)); }
+Pairs Context::getHeaderMapPairs(HeaderMapType type) { return headerMapToPairs(getConstMap(type)); }
 
-void Context::setMapPairs(MapType type, const Pairs& pairs) {
+void Context::setHeaderMapPairs(HeaderMapType type, const Pairs& pairs) {
   auto map = getMap(type);
   if (!map)
     return;
@@ -727,7 +731,7 @@ void Context::setMapPairs(MapType type, const Pairs& pairs) {
   }
 }
 
-void Context::removeMapValue(MapType type, absl::string_view key) {
+void Context::removeHeaderMapValue(HeaderMapType type, absl::string_view key) {
   auto map = getMap(type);
   if (!map)
     return;
@@ -735,7 +739,8 @@ void Context::removeMapValue(MapType type, absl::string_view key) {
   map->remove(lower_key);
 }
 
-void Context::replaceMapValue(MapType type, absl::string_view key, absl::string_view value) {
+void Context::replaceHeaderMapValue(HeaderMapType type, absl::string_view key,
+                                    absl::string_view value) {
   auto map = getMap(type);
   if (!map)
     return;
@@ -1361,12 +1366,12 @@ void Wasm::registerCallbacks() {
   _REGISTER_PROXY(getSharedData);
   _REGISTER_PROXY(setSharedData);
 
-  _REGISTER_PROXY(getMapValue);
-  _REGISTER_PROXY(addMapValue);
-  _REGISTER_PROXY(replaceMapValue);
-  _REGISTER_PROXY(removeMapValue);
-  _REGISTER_PROXY(getMapPairs);
-  _REGISTER_PROXY(setMapPairs);
+  _REGISTER_PROXY(getHeaderMapValue);
+  _REGISTER_PROXY(addHeaderMapValue);
+  _REGISTER_PROXY(replaceHeaderMapValue);
+  _REGISTER_PROXY(removeHeaderMapValue);
+  _REGISTER_PROXY(getHeaderMapPairs);
+  _REGISTER_PROXY(setHeaderMapPairs);
 
   _REGISTER_PROXY(getRequestBodyBufferBytes);
   _REGISTER_PROXY(getResponseBodyBufferBytes);

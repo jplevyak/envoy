@@ -81,7 +81,7 @@ enum class MetadataType : uint32_t {
   Log = 4,            // Immutable
   Node = 5            // Immutable
 };
-enum class MapType : uint32_t {
+enum class HeaderMapType : uint32_t {
   RequestHeaders = 0,  // During the onLog callback these are immutable
   RequestTrailers = 1,  // During the onLog callback these are immutable
   ResponseHeaders = 2,  // During the onLog callback these are immutable
@@ -139,13 +139,13 @@ extern "C" void proxy_getSharedData(const char* key_ptr, size_t key_size, const 
 extern "C" bool proxy_setSharedData(const char* key_ptr, size_t key_size, const char* value_ptr,
                                     size_t value_size, uint32_t cas);
 
-// Headers/Trailers/Metadata Maps
-extern "C" void proxy_addMapValue(MapType type, const char* key_ptr, size_t key_size, const char* value_ptr, size_t value_size);
-extern "C" void proxy_getMapValue(MapType type, const char* key_ptr, size_t key_size, const char** value_ptr, size_t* value_size);
-extern "C" void proxy_getMapPairs(MapType type, const char** ptr, size_t* size);
-extern "C" void proxy_setMapPairs(MapType type, const char* ptr, size_t size);
-extern "C" void proxy_replaceMapValue(MapType type, const char* key_ptr, size_t key_size, const char* value_ptr, size_t value_size);
-extern "C" void proxy_removeMapValue(MapType type, const char* key_ptr, size_t key_size);
+// Headers/Trailers/Metadata HeaderMaps
+extern "C" void proxy_addHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size, const char* value_ptr, size_t value_size);
+extern "C" void proxy_getHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size, const char** value_ptr, size_t* value_size);
+extern "C" void proxy_getHeaderMapPairs(HeaderMapType type, const char** ptr, size_t* size);
+extern "C" void proxy_setHeaderMapPairs(HeaderMapType type, const char* ptr, size_t size);
+extern "C" void proxy_replaceHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size, const char* value_ptr, size_t value_size);
+extern "C" void proxy_removeHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size);
 
 // Body
 extern "C" void proxy_getRequestBodyBufferBytes(uint32_t start, uint32_t length, const char** ptr,
@@ -362,9 +362,13 @@ public:
   virtual void onReceive(std::unique_ptr<WasmData> message) = 0;
   virtual void onRemoteClose(GrpcStatus status, std::unique_ptr<WasmData> error_message) = 0;
 
-private:
+protected:
   friend class Context;
 
+  void doRemoteClose(GrpcStatus status, std::unique_ptr<WasmData> error_message);
+
+  bool local_close_ = false;
+  bool remote_close_ = false;
   Context* const context_;
   uint32_t token_;
 };
@@ -381,6 +385,7 @@ public:
       return;
     }
     GrpcStreamHandlerBase::send(output, end_of_stream);
+    local_close_ = local_close_ || end_of_stream;
   }
 
   virtual void onReceive(Response&& message) = 0;
@@ -756,113 +761,113 @@ inline bool setSharedData(std::string_view key, std::string_view value, uint32_t
 }
 
 // Headers/Trailers
-inline void addMapValue(MapType type, std::string_view key, std::string_view value) {
-  proxy_addMapValue(type, key.data(), key.size(), value.data(), value.size());
+inline void addHeaderMapValue(HeaderMapType type, std::string_view key, std::string_view value) {
+  proxy_addHeaderMapValue(type, key.data(), key.size(), value.data(), value.size());
 }
 
-inline WasmDataPtr getMapValue(MapType type, std::string_view key) {
+inline WasmDataPtr getHeaderMapValue(HeaderMapType type, std::string_view key) {
   const char* value_ptr = nullptr;
   size_t value_size = 0;
-  proxy_getMapValue(type, key.data(), key.size(), &value_ptr, &value_size);
+  proxy_getHeaderMapValue(type, key.data(), key.size(), &value_ptr, &value_size);
   return std::make_unique<WasmData>(value_ptr, value_size);
 }
 
-inline void replaceMapValue(MapType type, std::string_view key, std::string_view value) {
-  proxy_replaceMapValue(type, key.data(), key.size(), value.data(), value.size());
+inline void replaceHeaderMapValue(HeaderMapType type, std::string_view key, std::string_view value) {
+  proxy_replaceHeaderMapValue(type, key.data(), key.size(), value.data(), value.size());
 }
 
-inline void removeMapValue(MapType type, std::string_view key) {
-  proxy_removeMapValue(type, key.data(), key.size());
+inline void removeHeaderMapValue(HeaderMapType type, std::string_view key) {
+  proxy_removeHeaderMapValue(type, key.data(), key.size());
 }
 
-inline WasmDataPtr getMapPairs(MapType type) {
+inline WasmDataPtr getHeaderMapPairs(HeaderMapType type) {
   const char* ptr = nullptr;
   size_t size = 0;
-  proxy_getMapPairs(type, &ptr, &size);
+  proxy_getHeaderMapPairs(type, &ptr, &size);
   return std::make_unique<WasmData>(ptr, size);
 }
 
-inline void setMapPairs(MapType type, const HeaderStringPairs &pairs) {
+inline void setHeaderMapPairs(HeaderMapType type, const HeaderStringPairs &pairs) {
   const char* ptr = nullptr;
   size_t size = 0;
   exportPairs(pairs, &ptr, &size);
-  proxy_setMapPairs(type, ptr, size);
+  proxy_setHeaderMapPairs(type, ptr, size);
 }
 
 inline void addRequestHeader(std::string_view key, std::string_view value) {
-  addMapValue(MapType::RequestHeaders, key, value);
+  addHeaderMapValue(HeaderMapType::RequestHeaders, key, value);
 }
 inline WasmDataPtr getRequestHeader(std::string_view key) {
-  return getMapValue(MapType::RequestHeaders, key);
+  return getHeaderMapValue(HeaderMapType::RequestHeaders, key);
 }
 inline void replaceRequestHeader(std::string_view key, std::string_view value) {
-  replaceMapValue(MapType::RequestHeaders, key, value);
+  replaceHeaderMapValue(HeaderMapType::RequestHeaders, key, value);
 }
 inline void removeRequestHeader(std::string_view key) {
-  removeMapValue(MapType::RequestHeaders, key);
+  removeHeaderMapValue(HeaderMapType::RequestHeaders, key);
 }
 inline WasmDataPtr getRequestHeaderPairs() {
-  return getMapPairs(MapType::RequestHeaders);
+  return getHeaderMapPairs(HeaderMapType::RequestHeaders);
 }
 inline void setRequestHeaderPairs(const HeaderStringPairs &pairs) {
-  return setMapPairs(MapType::RequestHeaders, pairs);
+  return setHeaderMapPairs(HeaderMapType::RequestHeaders, pairs);
 }
 
 inline void addRequestTrailer(std::string_view key, std::string_view value) {
-  addMapValue(MapType::RequestTrailers, key, value);
+  addHeaderMapValue(HeaderMapType::RequestTrailers, key, value);
 }
 inline WasmDataPtr getRequestTrailer(std::string_view key) {
-  return getMapValue(MapType::RequestTrailers, key);
+  return getHeaderMapValue(HeaderMapType::RequestTrailers, key);
 }
 inline void replaceRequestTrailer(std::string_view key, std::string_view value) {
-  replaceMapValue(MapType::RequestTrailers, key, value);
+  replaceHeaderMapValue(HeaderMapType::RequestTrailers, key, value);
 }
 inline void removeRequestTrailer(std::string_view key) {
-  removeMapValue(MapType::RequestTrailers, key);
+  removeHeaderMapValue(HeaderMapType::RequestTrailers, key);
 }
 inline WasmDataPtr getRequestTrailerPairs() {
-  return getMapPairs(MapType::RequestTrailers);
+  return getHeaderMapPairs(HeaderMapType::RequestTrailers);
 }
 inline void setRequestTrailerPairs(const HeaderStringPairs &pairs) {
-  return setMapPairs(MapType::RequestTrailers, pairs);
+  return setHeaderMapPairs(HeaderMapType::RequestTrailers, pairs);
 }
 
 inline void addResponseHeader(std::string_view key, std::string_view value) {
-  addMapValue(MapType::ResponseHeaders, key, value);
+  addHeaderMapValue(HeaderMapType::ResponseHeaders, key, value);
 }
 inline WasmDataPtr getResponseHeader(std::string_view key) {
-  return getMapValue(MapType::ResponseHeaders, key);
+  return getHeaderMapValue(HeaderMapType::ResponseHeaders, key);
 }
 inline void replaceResponseHeader(std::string_view key, std::string_view value) {
-  replaceMapValue(MapType::ResponseHeaders, key, value);
+  replaceHeaderMapValue(HeaderMapType::ResponseHeaders, key, value);
 }
 inline void removeResponseHeader(std::string_view key) {
-  removeMapValue(MapType::ResponseHeaders, key);
+  removeHeaderMapValue(HeaderMapType::ResponseHeaders, key);
 }
 inline WasmDataPtr getResponseHeaderPairs() {
-  return getMapPairs(MapType::ResponseHeaders);
+  return getHeaderMapPairs(HeaderMapType::ResponseHeaders);
 }
 inline void setResponseHeaderPairs(const HeaderStringPairs &pairs) {
-  return setMapPairs(MapType::ResponseHeaders, pairs);
+  return setHeaderMapPairs(HeaderMapType::ResponseHeaders, pairs);
 }
 
 inline void addResponseTrailer(std::string_view key, std::string_view value) {
-  addMapValue(MapType::ResponseTrailers, key, value);
+  addHeaderMapValue(HeaderMapType::ResponseTrailers, key, value);
 }
 inline WasmDataPtr getResponseTrailer(std::string_view key) {
-  return getMapValue(MapType::ResponseTrailers, key);
+  return getHeaderMapValue(HeaderMapType::ResponseTrailers, key);
 }
 inline void replaceResponseTrailer(std::string_view key, std::string_view value) {
-  replaceMapValue(MapType::ResponseTrailers, key, value);
+  replaceHeaderMapValue(HeaderMapType::ResponseTrailers, key, value);
 }
 inline void removeResponseTrailer(std::string_view key) {
-  removeMapValue(MapType::ResponseTrailers, key);
+  removeHeaderMapValue(HeaderMapType::ResponseTrailers, key);
 }
 inline WasmDataPtr getResponseTrailerPairs() {
-  return getMapPairs(MapType::ResponseTrailers);
+  return getHeaderMapPairs(HeaderMapType::ResponseTrailers);
 }
 inline void setResponseTrailerPairs(const HeaderStringPairs &pairs) {
-  return setMapPairs(MapType::ResponseTrailers, pairs);
+  return setHeaderMapPairs(HeaderMapType::ResponseTrailers, pairs);
 }
 
 // Body
@@ -1274,24 +1279,33 @@ inline void GrpcStreamHandlerBase::reset() {
 
 inline void GrpcStreamHandlerBase::close() {
   grpcClose(token_);
-  // NB: callbacks can still occur: reset() to prevent further callbacks.
+  local_close_ = true;
+  if (local_close_ && remote_close_) {
+    context_->grpc_streams_.erase(token_);
+  }
+  // NB: else callbacks can still occur: reset() to prevent further callbacks.
 }
 
 inline void GrpcStreamHandlerBase::send(std::string_view message, bool end_of_stream) {
   grpcSend(token_, message, end_of_stream);
   if (end_of_stream) {
     // NB: callbacks can still occur: reset() to prevent further callbacks.
+    local_close_ = local_close_ || end_of_stream;
+    if (local_close_ && remote_close_) {
+      context_->grpc_streams_.erase(token_);
+    }
   }
 }
 
 inline void Context::onGrpcCreateInitialMetadata(uint32_t token) {
-  if (IsGrpcCallToken(token)) {
+  {
     auto it = grpc_calls_.find(token);
     if (it != grpc_calls_.end()) {
       it->second->onCreateInitialMetadata();
       return;
     }
-  } else {
+  }
+  {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
       it->second->onCreateInitialMetadata();
@@ -1301,7 +1315,7 @@ inline void Context::onGrpcCreateInitialMetadata(uint32_t token) {
 }
 
 inline void Context::onGrpcReceiveInitialMetadata(uint32_t token) {
-  if (!IsGrpcCallToken(token)) {
+  {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
       it->second->onReceiveInitialMetadata();
@@ -1311,7 +1325,7 @@ inline void Context::onGrpcReceiveInitialMetadata(uint32_t token) {
 }
 
 inline void Context::onGrpcReceiveTrailingMetadata(uint32_t token) {
-  if (!IsGrpcCallToken(token)) {
+  {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
       it->second->onReceiveTrailingMetadata();
@@ -1321,24 +1335,23 @@ inline void Context::onGrpcReceiveTrailingMetadata(uint32_t token) {
 }
 
 inline void Context::onGrpcReceive(uint32_t token, std::unique_ptr<WasmData> message) {
-  if (IsGrpcCallToken(token)) {
-    {
-      auto it = simple_grpc_calls_.find(token);
-      if (it != simple_grpc_calls_.end()) {
-        it->second(GrpcStatus::OK, std::move(message));
-        simple_grpc_calls_.erase(token);
-        return;
-      }
+  {
+    auto it = simple_grpc_calls_.find(token);
+    if (it != simple_grpc_calls_.end()) {
+      it->second(GrpcStatus::OK, std::move(message));
+      simple_grpc_calls_.erase(token);
+      return;
     }
-    {
-      auto it = grpc_calls_.find(token);
-      if (it != grpc_calls_.end()) {
-        it->second->onSuccess(std::move(message));
-        grpc_calls_.erase(token);
-        return;
-      }
+  }
+  {
+    auto it = grpc_calls_.find(token);
+    if (it != grpc_calls_.end()) {
+      it->second->onSuccess(std::move(message));
+      grpc_calls_.erase(token);
+      return;
     }
-  } else {
+  }
+  {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
       it->second->onReceive(std::move(message));
@@ -1348,29 +1361,41 @@ inline void Context::onGrpcReceive(uint32_t token, std::unique_ptr<WasmData> mes
   }
 }
 
+inline void GrpcStreamHandlerBase::doRemoteClose(GrpcStatus status, std::unique_ptr<WasmData> error_message) {
+  auto context = context_;
+  auto token = token_;
+  this->onRemoteClose(status, std::move(error_message));
+  if (context->grpc_streams_.find(token) != context->grpc_streams_.end()) {
+    // We have not been deleted, e.g. by reset() in the onRemoteCall() virtual handler.
+    remote_close_ = true;
+    if (local_close_ && remote_close_) {
+      context_->grpc_streams_.erase(token_);
+    }
+    // else do not erase the token since we can still send in this state.
+  }
+}
+
 inline void Context::onGrpcClose(uint32_t token, GrpcStatus status, std::unique_ptr<WasmData> message) {
-  if (IsGrpcCallToken(token)) {
-    {
-      auto it = simple_grpc_calls_.find(token);
-      if (it != simple_grpc_calls_.end()) {
-        it->second(status, std::move(message));
-        simple_grpc_calls_.erase(token);
-        return;
-      }
+  {
+    auto it = simple_grpc_calls_.find(token);
+    if (it != simple_grpc_calls_.end()) {
+      it->second(status, std::move(message));
+      simple_grpc_calls_.erase(token);
+      return;
     }
-    {
-      auto it = grpc_calls_.find(token);
-      if (it != grpc_calls_.end()) {
-        it->second->onFailure(status, std::move(message));
-        grpc_calls_.erase(token);
-        return;
-      }
+  }
+  {
+    auto it = grpc_calls_.find(token);
+    if (it != grpc_calls_.end()) {
+      it->second->onFailure(status, std::move(message));
+      grpc_calls_.erase(token);
+      return;
     }
-  } else {
+  }
+  {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
-      it->second->onRemoteClose(status, std::move(message));
-      grpc_streams_.erase(token);
+      it->second->doRemoteClose(status, std::move(message));
       return;
     }
   }
