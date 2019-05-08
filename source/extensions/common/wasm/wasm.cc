@@ -451,8 +451,6 @@ void grpcSendHandler(void* raw_context, uint32_t token, uint32_t message_ptr, ui
   context->grpcSend(token, message, end_stream);
 }
 
-// uint32_t getTotalMemoryHandler(void*) { return 0x7FFFFFFF; }
-
 uint32_t _emscripten_memcpy_bigHandler(void*, uint32_t, uint32_t, uint32_t) {
   throw WasmException("emscripten emscripten_memcpy_big");
 }

@@ -20,20 +20,21 @@ std::unique_ptr<Context> Context::New(uint32_t id) {
 
 class MyGrpcCallHandler : public GrpcCallHandler<google::protobuf::Value> {
 public:
-  MyGrpcCallHandler(ExampleContext* context) :  GrpcCallHandler<google::protobuf::Value>(context) {}
+  MyGrpcCallHandler(ExampleContext* context) : GrpcCallHandler<google::protobuf::Value>(context) {}
   void onCreateInitialMetadata() override {}
-  void onSuccess(google::protobuf::Value&& response) override {
-    logDebug(response.string_value());
-  }
+  void onSuccess(google::protobuf::Value&& response) override { logDebug(response.string_value()); }
   void onFailure(GrpcStatus status, std::unique_ptr<WasmData> error_message) override {
-    logDebug(std::string("failure ") + std::to_string(static_cast<int>(status)) + std::string(error_message->view()));
+    logDebug(std::string("failure ") + std::to_string(static_cast<int>(status)) +
+             std::string(error_message->view()));
   }
 };
 
 // Currently unused.
-class MyGrpcStreamHandler : public GrpcStreamHandler<google::protobuf::Value, google::protobuf::Value> {
+class MyGrpcStreamHandler
+    : public GrpcStreamHandler<google::protobuf::Value, google::protobuf::Value> {
 public:
-  MyGrpcStreamHandler(ExampleContext* context) :  GrpcStreamHandler<google::protobuf::Value, google::protobuf::Value>(context) {}
+  MyGrpcStreamHandler(ExampleContext* context)
+      : GrpcStreamHandler<google::protobuf::Value, google::protobuf::Value>(context) {}
   void onCreateInitialMetadata() override {
     google::protobuf::Value value;
     value.set_string_value("request");
@@ -41,11 +42,10 @@ public:
   }
   void onReceiveInitialMetadata() override {}
   void onReceiveTrailingMetadata() override {}
-  void onReceive(google::protobuf::Value&& response) override {
-    logDebug(response.string_value());
-  }
+  void onReceive(google::protobuf::Value&& response) override { logDebug(response.string_value()); }
   void onRemoteClose(GrpcStatus status, std::unique_ptr<WasmData> error_message) override {
-    logDebug(std::string("failure ") + std::to_string(static_cast<int>(status)) + std::string(error_message->view()));
+    logDebug(std::string("failure ") + std::to_string(static_cast<int>(status)) +
+             std::string(error_message->view()));
     close();
   }
 };
@@ -65,7 +65,8 @@ FilterHeadersStatus ExampleContext::onRequestHeadersSimple() {
   grpc_service.SerializeToString(&grpc_service_string);
   google::protobuf::Value value;
   value.set_string_value("request");
-  grpcSimpleCall(grpc_service_string, "service", "method", value, 1000, success_callback, failure_callback);
+  grpcSimpleCall(grpc_service_string, "service", "method", value, 1000, success_callback,
+                 failure_callback);
   return FilterHeadersStatus::StopIteration;
 }
 
@@ -75,7 +76,8 @@ FilterHeadersStatus ExampleContext::onRequestHeadersStream() {
   grpc_service.mutable_envoy_grpc()->set_cluster_name("cluster");
   std::string grpc_service_string;
   grpc_service.SerializeToString(&grpc_service_string);
-  grpcStreamHandler(grpc_service_string, "service", "method", std::unique_ptr<GrpcStreamHandlerBase>(new MyGrpcStreamHandler(this)));
+  grpcStreamHandler(grpc_service_string, "service", "method",
+                    std::unique_ptr<GrpcStreamHandlerBase>(new MyGrpcStreamHandler(this)));
   return FilterHeadersStatus::StopIteration;
 }
 
@@ -87,7 +89,6 @@ FilterHeadersStatus ExampleContext::onRequestHeaders() {
   google::protobuf::Value value;
   value.set_string_value("request");
   grpcCallHandler(grpc_service_string, "service", "method", value, 1000,
-      std::unique_ptr<GrpcCallHandlerBase>(new MyGrpcCallHandler(this)));
+                  std::unique_ptr<GrpcCallHandlerBase>(new MyGrpcCallHandler(this)));
   return FilterHeadersStatus::StopIteration;
 }
-
