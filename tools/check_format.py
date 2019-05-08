@@ -17,8 +17,7 @@ import traceback
 EXCLUDED_PREFIXES = ("./generated/", "./thirdparty/", "./build", "./.git/", "./bazel-", "./.cache",
                      "./source/extensions/extensions_build_config.bzl",
                      "./tools/testdata/check_format/", "./tools/pyformat/", "./api/wasm/",
-                     # "./test/extensions/filters/http/wasm/"
-                     )
+                     "./test/extensions/filters/http/wasm/test_data")
 SUFFIXES = (".cc", ".h", "BUILD", "WORKSPACE", ".bzl", ".md", ".rst", ".proto")
 DOCS_SUFFIX = (".md", ".rst")
 PROTO_SUFFIX = (".proto")
