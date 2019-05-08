@@ -81,12 +81,12 @@ extern "C" bool proxy_setSharedData(const char* key_ptr, size_t key_size, const 
                                     size_t value_size, uint32_t cas);
 
 // Headers/Trailers/Metadata Maps
-extern "C" void proxy_addMapValue(MapType type, const char* key_ptr, size_t key_size, const char* value_ptr, size_t value_size);
-extern "C" void proxy_getMapValue(MapType type, const char* key_ptr, size_t key_size, const char** value_ptr, size_t* value_size);
-extern "C" void proxy_getMapPairs(MapType type, const char** ptr, size_t* size);
-extern "C" void proxy_setMapPairs(MapType type, const char* ptr, size_t size);
-extern "C" void proxy_replaceMapValue(MapType type, const char* key_ptr, size_t key_size, const char* value_ptr, size_t value_size);
-extern "C" void proxy_removeMapValue(MapType type, const char* key_ptr, size_t key_size);
+extern "C" void proxy_addHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size, const char* value_ptr, size_t value_size);
+extern "C" void proxy_getHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size, const char** value_ptr, size_t* value_size);
+extern "C" void proxy_getHeaderMapPairs(HeaderMapType type, const char** ptr, size_t* size);
+extern "C" void proxy_setHeaderMapPairs(HeaderMapType type, const char* ptr, size_t size);
+extern "C" void proxy_replaceHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size, const char* value_ptr, size_t value_size);
+extern "C" void proxy_removeHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size);
 
 // Body
 extern "C" void proxy_getRequestBodyBufferBytes(uint32_t start, uint32_t length, const char** ptr,

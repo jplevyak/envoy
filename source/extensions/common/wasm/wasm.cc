@@ -329,64 +329,64 @@ Word setSharedDataHandler(void* raw_context, Word key_ptr, Word key_size, Word v
 }
 
 // Header/Trailer/Metadata Maps
-void addMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size, Word value_ptr,
-                        Word value_size) {
-  if (type > static_cast<uint64_t>(MapType::MAX)) {
+void addHeaderMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size,
+                              Word value_ptr, Word value_size) {
+  if (type > static_cast<uint64_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  context->addMapValue(static_cast<MapType>(type.u64),
-                       context->wasmVm()->getMemory(key_ptr, key_size),
-                       context->wasmVm()->getMemory(value_ptr, value_size));
+  context->addHeaderMapValue(static_cast<HeaderMapType>(type.u64),
+                             context->wasmVm()->getMemory(key_ptr, key_size),
+                             context->wasmVm()->getMemory(value_ptr, value_size));
 }
 
-void getMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size,
-                        Word value_ptr_ptr, Word value_size_ptr) {
-  if (type > static_cast<uint64_t>(MapType::MAX)) {
+void getHeaderMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size,
+                              Word value_ptr_ptr, Word value_size_ptr) {
+  if (type > static_cast<uint64_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getMapValue(static_cast<MapType>(type.u64),
-                                     context->wasmVm()->getMemory(key_ptr, key_size));
+  auto result = context->getHeaderMapValue(static_cast<HeaderMapType>(type.u64),
+                                           context->wasmVm()->getMemory(key_ptr, key_size));
   context->wasm()->copyToPointerSize(result, value_ptr_ptr, value_size_ptr);
 }
 
-void replaceMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size,
-                            Word value_ptr, Word value_size) {
-  if (type > static_cast<uint64_t>(MapType::MAX)) {
+void replaceHeaderMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size,
+                                  Word value_ptr, Word value_size) {
+  if (type > static_cast<uint64_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  context->replaceMapValue(static_cast<MapType>(type.u64),
-                           context->wasmVm()->getMemory(key_ptr, key_size),
-                           context->wasmVm()->getMemory(value_ptr, value_size));
+  context->replaceHeaderMapValue(static_cast<HeaderMapType>(type.u64),
+                                 context->wasmVm()->getMemory(key_ptr, key_size),
+                                 context->wasmVm()->getMemory(value_ptr, value_size));
 }
 
-void removeMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size) {
-  if (type > static_cast<uint64_t>(MapType::MAX)) {
+void removeHeaderMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size) {
+  if (type > static_cast<uint64_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  context->removeMapValue(static_cast<MapType>(type.u64),
-                          context->wasmVm()->getMemory(key_ptr, key_size));
+  context->removeHeaderMapValue(static_cast<HeaderMapType>(type.u64),
+                                context->wasmVm()->getMemory(key_ptr, key_size));
 }
 
-void getMapPairsHandler(void* raw_context, Word type, Word ptr_ptr, Word size_ptr) {
-  if (type > static_cast<uint64_t>(MapType::MAX)) {
+void getHeaderMapPairsHandler(void* raw_context, Word type, Word ptr_ptr, Word size_ptr) {
+  if (type > static_cast<uint64_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  auto result = context->getMapPairs(static_cast<MapType>(type.u64));
+  auto result = context->getHeaderMapPairs(static_cast<HeaderMapType>(type.u64));
   getPairs(context, result, ptr_ptr, size_ptr);
 }
 
-void setMapPairsHandler(void* raw_context, Word type, Word ptr, Word size) {
-  if (type > static_cast<uint64_t>(MapType::MAX)) {
+void setHeaderMapPairsHandler(void* raw_context, Word type, Word ptr, Word size) {
+  if (type > static_cast<uint64_t>(HeaderMapType::MAX)) {
     return;
   }
   auto context = WASM_CONTEXT(raw_context);
-  context->setMapPairs(static_cast<MapType>(type.u64),
-                       toPairs(context->wasmVm()->getMemory(ptr, size)));
+  context->setHeaderMapPairs(static_cast<HeaderMapType>(type.u64),
+                             toPairs(context->wasmVm()->getMemory(ptr, size)));
 }
 
 // Body Buffer
@@ -487,17 +487,57 @@ void grpcSendHandler(void* raw_context, Word token, Word message_ptr, Word messa
 
 // Note: the ABI for 64-bit emscripten is unknown, so these are subject to change.
 Word getTotalMemoryHandler(void*) { return std::numeric_limits<int32_t>::max(); }
+
 Word _emscripten_get_heap_sizeHandler(void*) { return std::numeric_limits<int32_t>::max(); }
+
+Word _emscripten_memcpy_bigHandler(void*, Word, Word, Word) {
+  throw WasmException("emscripten emscripten_memcpy_big");
+}
+
+Word _emscripten_resize_heapHandler(void*, Word) {
+  throw WasmException("emscripten emscripten_resize_heap");
+}
+
+Word abortOnCannotGrowMemoryHandler(void*) {
+  throw WasmException("emscripten abortOnCannotGrowMemory");
+}
+
+void abortHandler(void*, Word) { throw WasmException("emscripten abort"); }
+
+void _abortHandler(void*) { throw WasmException("emscripten abort"); }
+
 void _llvm_trapHandler(void*) { throw WasmException("emscripten llvm_trap"); }
+
+void ___assert_failHandler(void*, Word, Word, Word, Word) {
+  throw WasmException("emscripten assert_fail");
+}
+
+void ___cxa_throwHandler(void*, Word, Word, Word) { throw WasmException("emscripten cxa_throw"); }
+
 void ___cxa_pure_virtualHandler(void*) { throw WasmException("emscripten cxa_pure_virtual"); }
-Word ___call_mainHandler(void*, Word, Word) {
-  throw WasmException("emscripten call_main");
-  return 0;
+
+Word ___call_mainHandler(void*, Word, Word) { throw WasmException("emscripten call_main"); }
+
+Word ___cxa_allocate_exceptionHandler(void*, Word) {
+  throw WasmException("emscripten cxa_allocate_exception");
 }
-Word ___clock_gettimeHandler(void*, Word, Word) {
-  throw WasmException("emscripten clock_gettime");
-  return 0;
-}
+
+Word ___clock_gettimeHandler(void*, Word, Word) { throw WasmException("emscripten clock_gettime"); }
+
+void ___lockHandler(void*, Word) { throw WasmException("emscripten lock"); }
+
+void ___unlockHandler(void*, Word) { throw WasmException("emscripten unlock"); }
+
+Word ___syscall6Handler(void*, Word, Word) { throw WasmException("emscripten syscall6"); }
+
+Word ___syscall54Handler(void*, Word, Word) { throw WasmException("emscripten syscall54"); }
+
+Word ___syscall140Handler(void*, Word, Word) { throw WasmException("emscripten syscall140"); }
+
+Word ___syscall146Handler(void*, Word, Word) { throw WasmException("emscripten syscall146"); }
+
+void ___setErrNoHandler(void*, Word) { throw WasmException("emscripten setErrNo"); }
+
 // pthread_equal is required to return 0 by the protobuf libarary.
 Word _pthread_equalHandler(void*, Word,
                            Word) { /* throw WasmException("emscripten pthread_equal"); */
@@ -505,27 +545,17 @@ Word _pthread_equalHandler(void*, Word,
 }
 Word _pthread_mutex_destroyHandler(void*, Word) {
   throw WasmException("emscripten pthread_mutex_destroy");
-  return 0;
 }
-Word _pthread_cond_waitHandler(void*, Word) {
-  throw WasmException("emscripten pthread_cond_wait");
-  return 0;
-}
+Word _pthread_cond_waitHandler(void*, Word) { throw WasmException("emscripten pthread_cond_wait"); }
 Word _pthread_getspecificHandler(void*, Word) {
   throw WasmException("emscripten pthread_getspecific");
-  return 0;
 }
 Word _pthread_key_createHandler(void*, Word) {
   throw WasmException("emscripten pthread_key_create");
-  return 0;
 }
-Word _pthread_onceHandler(void*, Word) {
-  throw WasmException("emscripten pthread_once");
-  return 0;
-}
+Word _pthread_onceHandler(void*, Word) { throw WasmException("emscripten pthread_once"); }
 Word _pthread_setspecificHandler(void*, Word) {
   throw WasmException("emscripten pthread_setspecific");
-  return 0;
 }
 void setTempRet0Handler(void*, Word) { throw WasmException("emscripten setTempRet0"); }
 
@@ -563,56 +593,57 @@ bool Context::setSharedData(absl::string_view key, absl::string_view value, uint
 }
 
 // Header/Trailer/Metadata Maps.
-Http::HeaderMap* Context::getMap(MapType type) {
+Http::HeaderMap* Context::getMap(HeaderMapType type) {
   switch (type) {
-  case MapType::RequestHeaders:
+  case HeaderMapType::RequestHeaders:
     return request_headers_;
-  case MapType::RequestTrailers:
+  case HeaderMapType::RequestTrailers:
     return request_trailers_;
-  case MapType::ResponseHeaders:
+  case HeaderMapType::ResponseHeaders:
     return response_headers_;
-  case MapType::ResponseTrailers:
+  case HeaderMapType::ResponseTrailers:
     return response_trailers_;
-  case MapType::GrpcCreateInitialMetadata:
+  case HeaderMapType::GrpcCreateInitialMetadata:
     return grpc_create_initial_metadata_;
   default:
     return nullptr;
   }
 }
 
-const Http::HeaderMap* Context::getConstMap(MapType type) {
+const Http::HeaderMap* Context::getConstMap(HeaderMapType type) {
   switch (type) {
-  case MapType::RequestHeaders:
+  case HeaderMapType::RequestHeaders:
     if (access_log_request_headers_) {
       return access_log_request_headers_;
     }
     return request_headers_;
-  case MapType::RequestTrailers:
+  case HeaderMapType::RequestTrailers:
     if (access_log_request_trailers_) {
       return access_log_request_trailers_;
     }
     return request_trailers_;
-  case MapType::ResponseHeaders:
+  case HeaderMapType::ResponseHeaders:
     if (access_log_response_headers_) {
       return access_log_response_headers_;
     }
     return response_headers_;
-  case MapType::ResponseTrailers:
+  case HeaderMapType::ResponseTrailers:
     if (access_log_response_trailers_) {
       return access_log_response_trailers_;
     }
     return response_trailers_;
-  case MapType::GrpcCreateInitialMetadata:
+  case HeaderMapType::GrpcCreateInitialMetadata:
     return grpc_create_initial_metadata_;
-  case MapType::GrpcReceiveInitialMetadata:
+  case HeaderMapType::GrpcReceiveInitialMetadata:
     return grpc_receive_initial_metadata_.get();
-  case MapType::GrpcReceiveTrailingMetadata:
+  case HeaderMapType::GrpcReceiveTrailingMetadata:
     return grpc_receive_trailing_metadata_.get();
   }
   return nullptr;
 }
 
-void Context::addMapValue(MapType type, absl::string_view key, absl::string_view value) {
+void Context::addHeaderMapValue(HeaderMapType type, absl::string_view key,
+                                absl::string_view value) {
   auto map = getMap(type);
   if (!map)
     return;
@@ -620,7 +651,7 @@ void Context::addMapValue(MapType type, absl::string_view key, absl::string_view
   map->addCopy(lower_key, std::string(value));
 }
 
-absl::string_view Context::getMapValue(MapType type, absl::string_view key) {
+absl::string_view Context::getHeaderMapValue(HeaderMapType type, absl::string_view key) {
   auto map = getConstMap(type);
   if (!map)
     return "";
@@ -647,9 +678,9 @@ Pairs headerMapToPairs(const Http::HeaderMap* map) {
   return pairs;
 }
 
-Pairs Context::getMapPairs(MapType type) { return headerMapToPairs(getConstMap(type)); }
+Pairs Context::getHeaderMapPairs(HeaderMapType type) { return headerMapToPairs(getConstMap(type)); }
 
-void Context::setMapPairs(MapType type, const Pairs& pairs) {
+void Context::setHeaderMapPairs(HeaderMapType type, const Pairs& pairs) {
   auto map = getMap(type);
   if (!map)
     return;
@@ -671,7 +702,7 @@ void Context::setMapPairs(MapType type, const Pairs& pairs) {
   }
 }
 
-void Context::removeMapValue(MapType type, absl::string_view key) {
+void Context::removeHeaderMapValue(HeaderMapType type, absl::string_view key) {
   auto map = getMap(type);
   if (!map)
     return;
@@ -679,7 +710,8 @@ void Context::removeMapValue(MapType type, absl::string_view key) {
   map->remove(lower_key);
 }
 
-void Context::replaceMapValue(MapType type, absl::string_view key, absl::string_view value) {
+void Context::replaceHeaderMapValue(HeaderMapType type, absl::string_view key,
+                                    absl::string_view value) {
   auto map = getMap(type);
   if (!map)
     return;
@@ -1255,12 +1287,26 @@ Wasm::Wasm(absl::string_view vm, absl::string_view id, absl::string_view initial
 void Wasm::registerCallbacks() {
 #define _REGISTER(_fn) wasm_vm_->registerCallback("envoy", #_fn, &_fn##Handler);
   if (is_emscripten_) {
-    _REGISTER(getTotalMemory);
+    _REGISTER(_emscripten_memcpy_big);
     _REGISTER(_emscripten_get_heap_size);
+    _REGISTER(_emscripten_resize_heap);
+    _REGISTER(abortOnCannotGrowMemory);
+    _REGISTER(abort);
+    _REGISTER(_abort);
     _REGISTER(_llvm_trap);
+    _REGISTER(___assert_fail);
+    _REGISTER(___cxa_throw);
     _REGISTER(___cxa_pure_virtual);
+    _REGISTER(___cxa_allocate_exception);
     _REGISTER(___call_main);
     _REGISTER(___clock_gettime);
+    _REGISTER(___lock);
+    _REGISTER(___unlock);
+    _REGISTER(___syscall6);
+    _REGISTER(___syscall54);
+    _REGISTER(___syscall140);
+    _REGISTER(___syscall146);
+    _REGISTER(___setErrNo);
     _REGISTER(_pthread_equal);
     _REGISTER(_pthread_mutex_destroy);
     _REGISTER(_pthread_cond_wait);
@@ -1291,12 +1337,12 @@ void Wasm::registerCallbacks() {
   _REGISTER_PROXY(getSharedData);
   _REGISTER_PROXY(setSharedData);
 
-  _REGISTER_PROXY(getMapValue);
-  _REGISTER_PROXY(addMapValue);
-  _REGISTER_PROXY(replaceMapValue);
-  _REGISTER_PROXY(removeMapValue);
-  _REGISTER_PROXY(getMapPairs);
-  _REGISTER_PROXY(setMapPairs);
+  _REGISTER_PROXY(getHeaderMapValue);
+  _REGISTER_PROXY(addHeaderMapValue);
+  _REGISTER_PROXY(replaceHeaderMapValue);
+  _REGISTER_PROXY(removeHeaderMapValue);
+  _REGISTER_PROXY(getHeaderMapPairs);
+  _REGISTER_PROXY(setHeaderMapPairs);
 
   _REGISTER_PROXY(getRequestBodyBufferBytes);
   _REGISTER_PROXY(getResponseBodyBufferBytes);
@@ -1321,6 +1367,9 @@ void Wasm::registerCallbacks() {
 
 void Wasm::establishEnvironment() {
   if (is_emscripten_) {
+    emscripten_table_base_ = wasm_vm_->makeGlobal("env", "__table_base", Word(0));
+    emscripten_dynamictop_ = wasm_vm_->makeGlobal("env", "DYNAMICTOP_PTR", Word(128 * 64 * 1024));
+
     wasm_vm_->makeModule("global");
     emscripten_NaN_ = wasm_vm_->makeGlobal("global", "NaN", std::nan("0"));
     emscripten_Infinity_ =

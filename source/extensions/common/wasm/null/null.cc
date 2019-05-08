@@ -105,6 +105,9 @@ struct NullVm : public WasmVm {
                                              double) override {
     NOT_REACHED_GCOVR_EXCL_LINE;
   };
+  std::unique_ptr<Global<Word>> makeGlobal(absl::string_view, absl::string_view, Word) override {
+    NOT_REACHED_GCOVR_EXCL_LINE;
+  };
 
   std::unique_ptr<NullVmPlugin> plugin_;
 };

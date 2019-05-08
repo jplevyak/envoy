@@ -214,7 +214,6 @@ TEST_F(WasmHttpFilterTest, GrpcCall) {
       "{{ test_rundir }}/test/extensions/filters/http/wasm/test_data/grpc_call_cpp.wasm")));
   setupFilter();
   wasm_->start();
-
   Grpc::MockAsyncRequest request;
   Grpc::RawAsyncRequestCallbacks* callbacks = nullptr;
   Grpc::MockAsyncClientManager client_manager;
@@ -276,8 +275,8 @@ TEST_F(WasmHttpFilterTest, Metadata) {
               scriptLog(spdlog::level::debug,
                         Eq(absl::string_view("onRequestHeaders 1 wasm_request_get_value"))));
   EXPECT_CALL(*filter_, scriptLog(spdlog::level::info, Eq(absl::string_view("header path /"))));
-  EXPECT_CALL(*filter_,
-              scriptLog(spdlog::level::err, Eq(absl::string_view("onRequestBody wasm_node_get_value"))));
+  EXPECT_CALL(*filter_, scriptLog(spdlog::level::err,
+                                  Eq(absl::string_view("onRequestBody wasm_node_get_value"))));
   EXPECT_CALL(*filter_, scriptLog(spdlog::level::warn, Eq(absl::string_view("onLog 1 /"))));
   EXPECT_CALL(*filter_, scriptLog(spdlog::level::warn, Eq(absl::string_view("onDone 1"))));
   EXPECT_CALL(

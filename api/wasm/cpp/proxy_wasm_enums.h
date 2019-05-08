@@ -24,7 +24,7 @@ enum class MetadataType : EnumType {
   Log = 4,            // Immutable
   Node = 5            // Immutable
 };
-enum class MapType : EnumType {
+enum class HeaderMapType : EnumType {
   RequestHeaders = 0,  // During the onLog callback these are immutable
   RequestTrailers = 1,  // During the onLog callback these are immutable
   ResponseHeaders = 2,  // During the onLog callback these are immutable

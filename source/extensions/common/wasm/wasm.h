@@ -119,7 +119,7 @@ enum class MetadataType : uint32_t {
   Node = 5,
   MAX = 5
 };
-enum class MapType : uint32_t {
+enum class HeaderMapType : uint32_t {
   RequestHeaders = 0,
   RequestTrailers = 1,
   ResponseHeaders = 2,
@@ -148,15 +148,15 @@ void getSharedDataHandler(void* raw_context, Word key_ptr, Word key_size, Word v
                           Word value_size_ptr, Word cas_ptr);
 Word setSharedDataHandler(void* raw_context, Word key_ptr, Word key_size, Word value_ptr,
                           Word value_size, Word cas);
-void addMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size, Word value_ptr,
-                        Word value_size);
-void getMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size,
-                        Word value_ptr_ptr, Word value_size_ptr);
-void replaceMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size,
-                            Word value_ptr, Word value_size);
-void removeMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size);
-void getMapPairsHandler(void* raw_context, Word type, Word ptr_ptr, Word size_ptr);
-void setMapPairsHandler(void* raw_context, Word type, Word ptr, Word size);
+void addHeaderMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size,
+                              Word value_ptr, Word value_size);
+void getHeaderMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size,
+                              Word value_ptr_ptr, Word value_size_ptr);
+void replaceHeaderMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size,
+                                  Word value_ptr, Word value_size);
+void removeHeaderMapValueHandler(void* raw_context, Word type, Word key_ptr, Word key_size);
+void getHeaderMapPairsHandler(void* raw_context, Word type, Word ptr_ptr, Word size_ptr);
+void setHeaderMapPairsHandler(void* raw_context, Word type, Word ptr, Word size);
 void getRequestBodyBufferBytesHandler(void* raw_context, Word start, Word length, Word ptr_ptr,
                                       Word size_ptr);
 void getResponseBodyBufferBytesHandler(void* raw_context, Word start, Word length, Word ptr_ptr,
@@ -343,13 +343,15 @@ public:
   virtual bool setSharedData(absl::string_view key, absl::string_view value, uint32_t cas);
 
   // Header/Trailer/Metadata Maps
-  virtual void addMapValue(MapType type, absl::string_view key, absl::string_view value);
-  virtual absl::string_view getMapValue(MapType type, absl::string_view key);
-  virtual Pairs getMapPairs(MapType type);
-  virtual void setMapPairs(MapType type, const Pairs& pairs);
+  virtual void addHeaderMapValue(HeaderMapType type, absl::string_view key,
+                                 absl::string_view value);
+  virtual absl::string_view getHeaderMapValue(HeaderMapType type, absl::string_view key);
+  virtual Pairs getHeaderMapPairs(HeaderMapType type);
+  virtual void setHeaderMapPairs(HeaderMapType type, const Pairs& pairs);
 
-  virtual void removeMapValue(MapType type, absl::string_view key);
-  virtual void replaceMapValue(MapType type, absl::string_view key, absl::string_view value);
+  virtual void removeHeaderMapValue(HeaderMapType type, absl::string_view key);
+  virtual void replaceHeaderMapValue(HeaderMapType type, absl::string_view key,
+                                     absl::string_view value);
 
   // Body Buffer
   virtual absl::string_view getRequestBodyBufferBytes(uint32_t start, uint32_t length);
@@ -415,8 +417,8 @@ protected:
 
   const ProtobufWkt::Struct* getMetadataStructProto(MetadataType type, absl::string_view name = "");
 
-  Http::HeaderMap* getMap(MapType type);
-  const Http::HeaderMap* getConstMap(MapType type);
+  Http::HeaderMap* getMap(HeaderMapType type);
+  const Http::HeaderMap* getConstMap(HeaderMapType type);
 
   Wasm* const wasm_;
   const uint32_t id_;
@@ -633,6 +635,8 @@ private:
   uint32_t emscripten_memory_size_ = 0;
   uint32_t emscripten_table_size_ = 0;
 
+  std::unique_ptr<Global<Word>> emscripten_table_base_;
+  std::unique_ptr<Global<Word>> emscripten_dynamictop_;
   std::unique_ptr<Global<double>> emscripten_NaN_;
   std::unique_ptr<Global<double>> emscripten_Infinity_;
 
@@ -737,8 +741,10 @@ public:
                                 WasmCallback_mj f) PURE;
 
   // Register typed value exported by the host environment.
+  virtual std::unique_ptr<Global<Word>> makeGlobal(absl::string_view module_name,
+                                                   absl::string_view name, Word initial_value) PURE;
   virtual std::unique_ptr<Global<double>>
-  makeGlobal(absl::string_view moduleName, absl::string_view name, double initialValue) PURE;
+  makeGlobal(absl::string_view module_name, absl::string_view name, double initial_value) PURE;
 };
 
 // Create a new low-level WASM VM of the give type (e.g. "envoy.wasm.vm.wavm").

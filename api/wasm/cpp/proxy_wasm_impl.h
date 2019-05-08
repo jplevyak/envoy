@@ -586,113 +586,113 @@ inline bool setSharedData(std::string_view key, std::string_view value, uint32_t
 }
 
 // Headers/Trailers
-inline void addMapValue(MapType type, std::string_view key, std::string_view value) {
-  proxy_addMapValue(type, key.data(), key.size(), value.data(), value.size());
+inline void addHeaderMapValue(HeaderMapType type, std::string_view key, std::string_view value) {
+  proxy_addHeaderMapValue(type, key.data(), key.size(), value.data(), value.size());
 }
 
-inline WasmDataPtr getMapValue(MapType type, std::string_view key) {
+inline WasmDataPtr getHeaderMapValue(HeaderMapType type, std::string_view key) {
   const char* value_ptr = nullptr;
   size_t value_size = 0;
-  proxy_getMapValue(type, key.data(), key.size(), &value_ptr, &value_size);
+  proxy_getHeaderMapValue(type, key.data(), key.size(), &value_ptr, &value_size);
   return std::make_unique<WasmData>(value_ptr, value_size);
 }
 
-inline void replaceMapValue(MapType type, std::string_view key, std::string_view value) {
-  proxy_replaceMapValue(type, key.data(), key.size(), value.data(), value.size());
+inline void replaceHeaderMapValue(HeaderMapType type, std::string_view key, std::string_view value) {
+  proxy_replaceHeaderMapValue(type, key.data(), key.size(), value.data(), value.size());
 }
 
-inline void removeMapValue(MapType type, std::string_view key) {
-  proxy_removeMapValue(type, key.data(), key.size());
+inline void removeHeaderMapValue(HeaderMapType type, std::string_view key) {
+  proxy_removeHeaderMapValue(type, key.data(), key.size());
 }
 
-inline WasmDataPtr getMapPairs(MapType type) {
+inline WasmDataPtr getHeaderMapPairs(HeaderMapType type) {
   const char* ptr = nullptr;
   size_t size = 0;
-  proxy_getMapPairs(type, &ptr, &size);
+  proxy_getHeaderMapPairs(type, &ptr, &size);
   return std::make_unique<WasmData>(ptr, size);
 }
 
-inline void setMapPairs(MapType type, const HeaderStringPairs &pairs) {
+inline void setHeaderMapPairs(HeaderMapType type, const HeaderStringPairs &pairs) {
   const char* ptr = nullptr;
   size_t size = 0;
   exportPairs(pairs, &ptr, &size);
-  proxy_setMapPairs(type, ptr, size);
+  proxy_setHeaderMapPairs(type, ptr, size);
 }
 
 inline void addRequestHeader(std::string_view key, std::string_view value) {
-  addMapValue(MapType::RequestHeaders, key, value);
+  addHeaderMapValue(HeaderMapType::RequestHeaders, key, value);
 }
 inline WasmDataPtr getRequestHeader(std::string_view key) {
-  return getMapValue(MapType::RequestHeaders, key);
+  return getHeaderMapValue(HeaderMapType::RequestHeaders, key);
 }
 inline void replaceRequestHeader(std::string_view key, std::string_view value) {
-  replaceMapValue(MapType::RequestHeaders, key, value);
+  replaceHeaderMapValue(HeaderMapType::RequestHeaders, key, value);
 }
 inline void removeRequestHeader(std::string_view key) {
-  removeMapValue(MapType::RequestHeaders, key);
+  removeHeaderMapValue(HeaderMapType::RequestHeaders, key);
 }
 inline WasmDataPtr getRequestHeaderPairs() {
-  return getMapPairs(MapType::RequestHeaders);
+  return getHeaderMapPairs(HeaderMapType::RequestHeaders);
 }
 inline void setRequestHeaderPairs(const HeaderStringPairs &pairs) {
-  return setMapPairs(MapType::RequestHeaders, pairs);
+  return setHeaderMapPairs(HeaderMapType::RequestHeaders, pairs);
 }
 
 inline void addRequestTrailer(std::string_view key, std::string_view value) {
-  addMapValue(MapType::RequestTrailers, key, value);
+  addHeaderMapValue(HeaderMapType::RequestTrailers, key, value);
 }
 inline WasmDataPtr getRequestTrailer(std::string_view key) {
-  return getMapValue(MapType::RequestTrailers, key);
+  return getHeaderMapValue(HeaderMapType::RequestTrailers, key);
 }
 inline void replaceRequestTrailer(std::string_view key, std::string_view value) {
-  replaceMapValue(MapType::RequestTrailers, key, value);
+  replaceHeaderMapValue(HeaderMapType::RequestTrailers, key, value);
 }
 inline void removeRequestTrailer(std::string_view key) {
-  removeMapValue(MapType::RequestTrailers, key);
+  removeHeaderMapValue(HeaderMapType::RequestTrailers, key);
 }
 inline WasmDataPtr getRequestTrailerPairs() {
-  return getMapPairs(MapType::RequestTrailers);
+  return getHeaderMapPairs(HeaderMapType::RequestTrailers);
 }
 inline void setRequestTrailerPairs(const HeaderStringPairs &pairs) {
-  return setMapPairs(MapType::RequestTrailers, pairs);
+  return setHeaderMapPairs(HeaderMapType::RequestTrailers, pairs);
 }
 
 inline void addResponseHeader(std::string_view key, std::string_view value) {
-  addMapValue(MapType::ResponseHeaders, key, value);
+  addHeaderMapValue(HeaderMapType::ResponseHeaders, key, value);
 }
 inline WasmDataPtr getResponseHeader(std::string_view key) {
-  return getMapValue(MapType::ResponseHeaders, key);
+  return getHeaderMapValue(HeaderMapType::ResponseHeaders, key);
 }
 inline void replaceResponseHeader(std::string_view key, std::string_view value) {
-  replaceMapValue(MapType::ResponseHeaders, key, value);
+  replaceHeaderMapValue(HeaderMapType::ResponseHeaders, key, value);
 }
 inline void removeResponseHeader(std::string_view key) {
-  removeMapValue(MapType::ResponseHeaders, key);
+  removeHeaderMapValue(HeaderMapType::ResponseHeaders, key);
 }
 inline WasmDataPtr getResponseHeaderPairs() {
-  return getMapPairs(MapType::ResponseHeaders);
+  return getHeaderMapPairs(HeaderMapType::ResponseHeaders);
 }
 inline void setResponseHeaderPairs(const HeaderStringPairs &pairs) {
-  return setMapPairs(MapType::ResponseHeaders, pairs);
+  return setHeaderMapPairs(HeaderMapType::ResponseHeaders, pairs);
 }
 
 inline void addResponseTrailer(std::string_view key, std::string_view value) {
-  addMapValue(MapType::ResponseTrailers, key, value);
+  addHeaderMapValue(HeaderMapType::ResponseTrailers, key, value);
 }
 inline WasmDataPtr getResponseTrailer(std::string_view key) {
-  return getMapValue(MapType::ResponseTrailers, key);
+  return getHeaderMapValue(HeaderMapType::ResponseTrailers, key);
 }
 inline void replaceResponseTrailer(std::string_view key, std::string_view value) {
-  replaceMapValue(MapType::ResponseTrailers, key, value);
+  replaceHeaderMapValue(HeaderMapType::ResponseTrailers, key, value);
 }
 inline void removeResponseTrailer(std::string_view key) {
-  removeMapValue(MapType::ResponseTrailers, key);
+  removeHeaderMapValue(HeaderMapType::ResponseTrailers, key);
 }
 inline WasmDataPtr getResponseTrailerPairs() {
-  return getMapPairs(MapType::ResponseTrailers);
+  return getHeaderMapPairs(HeaderMapType::ResponseTrailers);
 }
 inline void setResponseTrailerPairs(const HeaderStringPairs &pairs) {
-  return setMapPairs(MapType::ResponseTrailers, pairs);
+  return setHeaderMapPairs(HeaderMapType::ResponseTrailers, pairs);
 }
 
 // Body

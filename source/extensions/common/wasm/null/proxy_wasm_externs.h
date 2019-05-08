@@ -75,29 +75,29 @@ inline bool proxy_setSharedData(const char* key_ptr, size_t key_size, const char
 }
 
 // Headers/Trailers/Metadata Maps
-inline void proxy_addMapValue(MapType type, const char* key_ptr, size_t key_size,
-                              const char* value_ptr, size_t value_size) {
-  addMapValueHandler(current_context_, WS(type), WR(key_ptr), WS(key_size), WR(value_ptr),
-                     WS(value_size));
+inline void proxy_addHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size,
+                                    const char* value_ptr, size_t value_size) {
+  addHeaderMapValueHandler(current_context_, WS(type), WR(key_ptr), WS(key_size), WR(value_ptr),
+                           WS(value_size));
 }
-inline void proxy_getMapValue(MapType type, const char* key_ptr, size_t key_size,
-                              const char** value_ptr, size_t* value_size) {
-  getMapValueHandler(current_context_, WS(type), WR(key_ptr), WS(key_size), WR(value_ptr),
-                     WR(value_size));
+inline void proxy_getHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size,
+                                    const char** value_ptr, size_t* value_size) {
+  getHeaderMapValueHandler(current_context_, WS(type), WR(key_ptr), WS(key_size), WR(value_ptr),
+                           WR(value_size));
 }
-inline void proxy_getMapPairs(MapType type, const char** ptr, size_t* size) {
-  getMapPairsHandler(current_context_, WS(type), WR(ptr), WR(size));
+inline void proxy_getHeaderMapPairs(HeaderMapType type, const char** ptr, size_t* size) {
+  getHeaderMapPairsHandler(current_context_, WS(type), WR(ptr), WR(size));
 }
-inline void proxy_setMapPairs(MapType type, const char* ptr, size_t size) {
-  setMapPairsHandler(current_context_, WS(type), WR(ptr), WS(size));
+inline void proxy_setHeaderMapPairs(HeaderMapType type, const char* ptr, size_t size) {
+  setHeaderMapPairsHandler(current_context_, WS(type), WR(ptr), WS(size));
 }
-inline void proxy_replaceMapValue(MapType type, const char* key_ptr, size_t key_size,
-                                  const char* value_ptr, size_t value_size) {
-  replaceMapValueHandler(current_context_, WS(type), WR(key_ptr), WS(key_size), WR(value_ptr),
-                         WS(value_size));
+inline void proxy_replaceHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size,
+                                        const char* value_ptr, size_t value_size) {
+  replaceHeaderMapValueHandler(current_context_, WS(type), WR(key_ptr), WS(key_size), WR(value_ptr),
+                               WS(value_size));
 }
-inline void proxy_removeMapValue(MapType type, const char* key_ptr, size_t key_size) {
-  removeMapValueHandler(current_context_, WS(type), WR(key_ptr), WS(key_size));
+inline void proxy_removeHeaderMapValue(HeaderMapType type, const char* key_ptr, size_t key_size) {
+  removeHeaderMapValueHandler(current_context_, WS(type), WR(key_ptr), WS(key_size));
 }
 
 // Body
