@@ -136,7 +136,7 @@ void NullVm::makeModule(absl::string_view /* name */) {
 }
 
 void NullVm::start(Common::Wasm::Context* context) {
-  SaveRestoreContext saveed_context(context);
+  SaveRestoreContext saved_context(context);
   plugin_->start();
 }
 
@@ -172,13 +172,13 @@ void NullVm::getFunction(absl::string_view functionName, WasmCall0Void* f) {
   if (functionName == "_proxy_onStart") {
     auto plugin = plugin_.get();
     *f = [plugin](Common::Wasm::Context* context) {
-      SaveRestoreContext saveed_context(context);
+      SaveRestoreContext saved_context(context);
       plugin->onStart();
     };
   } else if (functionName == "_proxy_onTick") {
     auto plugin = plugin_.get();
     *f = [plugin](Common::Wasm::Context* context) {
-      SaveRestoreContext saveed_context(context);
+      SaveRestoreContext saved_context(context);
       plugin->onTick();
     };
   } else {
