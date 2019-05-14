@@ -537,6 +537,7 @@ void NullVmPlugin::onDelete(uint64_t context_id) {
     return;
   }
   c->onDelete();
+  context_map_.erase(context_id);
 }
 
 } // namespace Null
