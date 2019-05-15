@@ -6,6 +6,9 @@ namespace Common {
 namespace Wasm {
 namespace Null {
 namespace Plugin {
+namespace ExamplePlugin {
+std::unique_ptr<Plugin::Context> NewContext(uint32_t id);
+}  // namespace ExamplePlugin
 
 /**
  * Config registration for a Wasm filter plugin. @see NamedHttpFilterConfigFactory.
@@ -17,11 +20,8 @@ public:
   const std::string name() const override { return "null_vm_plugin"; }
   std::unique_ptr<NullVmPlugin> create() const override {
     return std::make_unique<NullVmPlugin>(
-        &Envoy::Extensions::Common::Wasm::Null::Plugin::Context::New);
+        &Envoy::Extensions::Common::Wasm::Null::Plugin::ExamplePlugin::NewContext);
   }
-
-private:
-  std::string name_;
 };
 
 /**

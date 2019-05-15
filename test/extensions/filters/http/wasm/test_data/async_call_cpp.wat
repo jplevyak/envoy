@@ -473,7 +473,7 @@
     end ;; $if
     )
   
-  (func $__ZN7Context3NewEj (type $1)
+  (func $__Z10NewContextj (type $1)
     (param $0 i32)
     (param $1 i32)
     (local $2 i32)
@@ -26858,7 +26858,7 @@
     end ;; $if
     local.get $1
     local.get $0
-    call $__ZN7Context3NewEj
+    call $__Z10NewContextj
     local.get $1
     i32.load
     local.set $3

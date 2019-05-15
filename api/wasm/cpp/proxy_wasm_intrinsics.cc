@@ -1,12 +1,14 @@
 // NOLINT(namespace-envoy)
 #include "proxy_wasm_intrinsics.h"
 
+std::unique_ptr<Context> NewContext(uint32_t id);
+
 static std::unordered_map<int32_t, std::unique_ptr<Context>> context_map;
 
 static Context* ensureContext(uint32_t context_id) {
   auto e = context_map.insert(std::make_pair(context_id, nullptr));
   if (e.second)
-    e.first->second = Context::New(context_id);
+    e.first->second = NewContext(context_id);
   return e.first->second.get();
 }
 

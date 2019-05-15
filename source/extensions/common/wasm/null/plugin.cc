@@ -13,6 +13,7 @@ namespace Common {
 namespace Wasm {
 namespace Null {
 namespace Plugin {
+namespace ExamplePlugin {
 #endif
 
 class PluginContext : public Context {
@@ -25,7 +26,7 @@ public:
   void onDone() override;
 };
 
-std::unique_ptr<Context> Context::New(uint32_t id) {
+std::unique_ptr<Context> NewContext(uint32_t id) {
   return std::unique_ptr<Context>(new PluginContext(id));
 }
 
@@ -52,6 +53,7 @@ void PluginContext::onLog() {
 void PluginContext::onDone() { logWarn("onDone " + std::to_string(id())); }
 
 #ifdef NULL_PLUGIN
+} // namespace ExamplePlugin
 } // namespace Plugin
 } // namespace Null
 } // namespace Wasm

@@ -225,8 +225,6 @@ public:
 
   uint32_t id() { return id_; }
 
-  static std::unique_ptr<Context> New(uint32_t id); // For subclassing.
-
   // Called once when the filter loads and on configuration changes.
   virtual void onConfigure(std::unique_ptr<WasmData> /* configuration */) {}
   // Called once when the filter loads.
