@@ -319,7 +319,7 @@ Wavm::~Wavm() {
   if (emscriptenInstance_) {
     emscriptenInstance_->env = nullptr;
     emscriptenInstance_->global = nullptr;
-    emscriptenInstance_->emscriptenMemory = nullptr;
+    emscriptenInstance_->memory = nullptr;
     delete emscriptenInstance_;
   }
   context_ = nullptr;
@@ -422,7 +422,7 @@ void Wavm::start(Context* context) {
     }
 
     if (emscriptenInstance_) {
-      Emscripten::initializeGlobals(context_, irModule_, moduleInstance_);
+      Emscripten::initializeGlobals(emscriptenInstance_, context_, irModule_, moduleInstance_);
     }
 
     f = asFunctionNullable(getInstanceExport(moduleInstance_, "__post_instantiate"));

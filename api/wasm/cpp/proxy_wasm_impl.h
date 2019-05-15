@@ -188,9 +188,13 @@ public:
   virtual void onReceive(std::unique_ptr<WasmData> message) = 0;
   virtual void onRemoteClose(GrpcStatus status, std::unique_ptr<WasmData> error_message) = 0;
 
-private:
+protected:
   friend class Context;
 
+  void doRemoteClose(GrpcStatus status, std::unique_ptr<WasmData> error_message);
+
+  bool local_close_ = false;
+  bool remote_close_ = false;
   Context* const context_;
   uint32_t token_;
 };
@@ -207,6 +211,7 @@ public:
       return;
     }
     GrpcStreamHandlerBase::send(output, end_of_stream);
+    local_close_ = local_close_ || end_of_stream;
   }
 
   virtual void onReceive(Response&& message) = 0;
@@ -225,6 +230,8 @@ public:
 
   uint32_t id() { return id_; }
 
+  static std::unique_ptr<Context> New(uint32_t id); // For subclassing.
+
   // Called once when the filter loads and on configuration changes.
   virtual void onConfigure(std::unique_ptr<WasmData> /* configuration */) {}
   // Called once when the filter loads.
@@ -232,14 +239,12 @@ public:
 
   // Called on individual requests/response streams.
   virtual void onCreate() {}
-
   virtual FilterHeadersStatus onRequestHeaders() { return FilterHeadersStatus::Continue; }
   virtual FilterMetadataStatus onRequestMetadata() { return FilterMetadataStatus::Continue; }
   virtual FilterDataStatus onRequestBody(size_t /* body_buffer_length */, bool /* end_of_stream */) {
     return FilterDataStatus::Continue;
   }
   virtual FilterTrailersStatus onRequestTrailers() { return FilterTrailersStatus::Continue; }
-
   virtual FilterHeadersStatus onResponseHeaders() { return FilterHeadersStatus::Continue; }
   virtual FilterMetadataStatus onResponseMetadata() { return FilterMetadataStatus::Continue; }
   virtual FilterDataStatus onResponseBody(size_t /* body_buffer_length */, bool /* end_of_stream */) {
@@ -446,7 +451,7 @@ inline google::protobuf::Value Context::metadataValue(MetadataType type, std::st
       google::protobuf::Value value;
       if (value.ParseFromArray(p.second.data(), p.second.size())) {
         auto k = std::make_pair(type, std::string(p.first));
-        value_cache_[k] = value;
+        value_cache_[cache_key] = value;
       }
     }
     auto it = value_cache_.find(cache_key);
@@ -746,8 +751,8 @@ inline void MakeHeaderStringPairsBuffer(const HeaderStringPairs& headers, void**
 }
 
 inline uint32_t makeHttpCall(std::string_view uri, const HeaderStringPairs& request_headers,
-                         std::string_view request_body, const HeaderStringPairs& request_trailers,
-                         uint32_t timeout_milliseconds) {
+                             std::string_view request_body, const HeaderStringPairs& request_trailers,
+                             uint32_t timeout_milliseconds) {
   void *headers_ptr = nullptr, *trailers_ptr = nullptr;
   size_t headers_size = 0, trailers_size = 0;
   MakeHeaderStringPairsBuffer(request_headers, &headers_ptr, &headers_size);
@@ -795,11 +800,14 @@ struct MetricBase {
 
   MetricType type;
   std::string name;
+  std::string prefix;
   std::vector<MetricTag> tags;
   std::unordered_map<std::string, uint32_t> metric_ids;
 
+  std::string prefixWithFields(const std::vector<std::string>& fields);
   uint32_t resolveFullName(const std::string& n);
   uint32_t resolveWithFields(const std::vector<std::string>& fields);
+  void partiallyResolveWithFields(const std::vector<std::string>& fields);
   std::string nameFromIdSlow(uint32_t id);
 };
 
@@ -811,30 +819,42 @@ struct Metric : public MetricBase {
   template <typename... Fields> void record(uint64_t value, Fields... tags);
   template <typename... Fields> uint64_t get(Fields... tags);
   template <typename... Fields> uint32_t resolve(Fields... tags);
+  template <typename... Fields> Metric partiallyResolve(Fields... tags);
 };
 
-inline uint32_t MetricBase::resolveWithFields(const std::vector<std::string>& fields) {
-  if (fields.size() != tags.size()) {
-    throw ProxyException("metric fields.size() != tags.size()");
-  }
-  size_t s = 0;
-  for (auto& t : tags) {
-    s += t.name.size() + 1; // 1 more for "."
+inline std::string MetricBase::prefixWithFields(const std::vector<std::string>& fields) {
+  size_t s = prefix.size();
+  for (size_t i = 0; i < fields.size(); i++) {
+    s += tags[i].name.size() + 1;  // 1 more for "."
   }
   for (auto& f : fields) {
-    s += f.size() + 1; // 1 more for "."
+    s += f.size() + 1;  // 1 more for "."
   }
-  s += name.size() + 2; // "." and "\0";
   std::string n;
   n.reserve(s);
-  for (size_t i = 0; i < tags.size(); i++) {
+  n.append(prefix);
+  for (size_t i = 0; i < fields.size(); i++) {
     n.append(tags[i].name);
     n.append(".");
     n.append(fields[i]);
     n.append(".");
   }
-  n.append(name);
-  return resolveFullName(n);
+  return n;
+}
+
+inline uint32_t MetricBase::resolveWithFields(const std::vector<std::string>& fields) {
+  if (fields.size() != tags.size()) {
+    throw ProxyException("metric fields.size() != tags.size()");
+  }
+  return resolveFullName(prefixWithFields(fields) + name);
+}
+
+inline void MetricBase::partiallyResolveWithFields(const std::vector<std::string>& fields) {
+  if (fields.size() >= tags.size()) {
+    throw ProxyException("metric fields.size() >= tags.size()");
+  }
+  prefix = prefixWithFields(fields);
+  tags.erase(tags.begin(), tags.begin()+(fields.size()));
 }
 
 template <typename T> inline std::string ToString(T t) { return std::to_string(t); }
@@ -865,6 +885,13 @@ inline std::string MetricBase::nameFromIdSlow(uint32_t id) {
 template <typename... Fields> inline uint32_t Metric::resolve(Fields... f) {
   std::vector<std::string> fields{ToString(f)...};
   return resolveWithFields(fields);
+}
+
+template <typename... Fields> Metric Metric::partiallyResolve(Fields... f) {
+  std::vector<std::string> fields{ToString(f)...};
+  Metric partial_metric(*this);
+  partial_metric.partiallyResolveWithFields(fields);
+  return partial_metric;
 }
 
 template <typename... Fields> inline void Metric::increment(int64_t offset, Fields... f) {
@@ -951,6 +978,14 @@ template <typename... Tags> struct Counter : public MetricBase {
     return SimpleCounter(resolveWithFields(fields));
   }
 
+  template<typename... AdditionalTags>
+  Counter<AdditionalTags...>* resolveAndExtend(Tags... f, MetricTagDescriptor<AdditionalTags>... fieldnames) {
+    std::vector<std::string> fields{ToString(f)...};
+    auto new_counter = Counter<AdditionalTags...>::New(name, fieldnames...);
+    new_counter->prefix = prefixWithFields(fields);
+    return new_counter;
+  }
+
   void increment(int64_t offset, Tags... tags) {
     std::vector<std::string> fields{ToString(tags)...};
     auto metric_id = resolveWithFields(fields);
@@ -985,6 +1020,14 @@ template <typename... Tags> struct Gauge : public MetricBase {
     return SimpleGauge(resolveWithFields(fields));
   }
 
+  template<typename... AdditionalTags>
+  Gauge<AdditionalTags...>* resolveAndExtend(Tags... f, MetricTagDescriptor<AdditionalTags>... fieldnames) {
+    std::vector<std::string> fields{ToString(f)...};
+    auto new_gauge = Gauge<AdditionalTags...>::New(name, fieldnames...);
+    new_gauge->prefix = prefixWithFields(fields);
+    return new_gauge;
+  }
+
   void record(int64_t offset, Tags... tags) {
     std::vector<std::string> fields{ToString(tags)...};
     auto metric_id = resolveWithFields(fields);
@@ -1015,6 +1058,14 @@ template <typename... Tags> struct Histogram : public MetricBase {
   SimpleHistogram resolve(Tags... f) {
     std::vector<std::string> fields{ToString(f)...};
     return SimpleHistogram(resolveWithFields(fields));
+  }
+
+  template<typename... AdditionalTags>
+  Histogram<AdditionalTags...>* resolveAndExtend(Tags... f, MetricTagDescriptor<AdditionalTags>... fieldnames) {
+    std::vector<std::string> fields{ToString(f)...};
+    auto new_histogram = Histogram<AdditionalTags...>::New(name, fieldnames...);
+    new_histogram->prefix = prefixWithFields(fields);
+    return new_histogram;
   }
 
   void record(int64_t offset, Tags... tags) {
@@ -1102,13 +1153,21 @@ inline void GrpcStreamHandlerBase::reset() {
 
 inline void GrpcStreamHandlerBase::close() {
   grpcClose(token_);
-  // NB: callbacks can still occur: reset() to prevent further callbacks.
+  local_close_ = true;
+  if (local_close_ && remote_close_) {
+    context_->grpc_streams_.erase(token_);
+  }
+  // NB: else callbacks can still occur: reset() to prevent further callbacks.
 }
 
 inline void GrpcStreamHandlerBase::send(std::string_view message, bool end_of_stream) {
   grpcSend(token_, message, end_of_stream);
   if (end_of_stream) {
     // NB: callbacks can still occur: reset() to prevent further callbacks.
+    local_close_ = local_close_ || end_of_stream;
+    if (local_close_ && remote_close_) {
+      context_->grpc_streams_.erase(token_);
+    }
   }
 }
 
@@ -1176,6 +1235,20 @@ inline void Context::onGrpcReceive(uint32_t token, std::unique_ptr<WasmData> mes
   }
 }
 
+inline void GrpcStreamHandlerBase::doRemoteClose(GrpcStatus status, std::unique_ptr<WasmData> error_message) {
+  auto context = context_;
+  auto token = token_;
+  this->onRemoteClose(status, std::move(error_message));
+  if (context->grpc_streams_.find(token) != context->grpc_streams_.end()) {
+    // We have not been deleted, e.g. by reset() in the onRemoteCall() virtual handler.
+    remote_close_ = true;
+    if (local_close_ && remote_close_) {
+      context_->grpc_streams_.erase(token_);
+    }
+    // else do not erase the token since we can still send in this state.
+  }
+}
+
 inline void Context::onGrpcClose(uint32_t token, GrpcStatus status, std::unique_ptr<WasmData> message) {
   {
     auto it = simple_grpc_calls_.find(token);
@@ -1196,8 +1269,7 @@ inline void Context::onGrpcClose(uint32_t token, GrpcStatus status, std::unique_
   {
     auto it = grpc_streams_.find(token);
     if (it != grpc_streams_.end()) {
-      it->second->onRemoteClose(status, std::move(message));
-      grpc_streams_.erase(token);
+      it->second->doRemoteClose(status, std::move(message));
       return;
     }
   }
