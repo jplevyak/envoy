@@ -45,6 +45,7 @@ public:
   using NewContextFnPtr = std::unique_ptr<Context> (*)(uint32_t /* id */);
 
   NullVmPlugin(NewContextFnPtr new_context) : new_context_(new_context) {}
+  NullVmPlugin(const NullVmPlugin& other) : new_context_(other.new_context_) {}
 
   std::unique_ptr<Context> newContext(uint64_t context_id) { return new_context_(context_id); }
 

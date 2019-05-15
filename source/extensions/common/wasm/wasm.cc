@@ -158,7 +158,7 @@ Pairs toPairs(absl::string_view buffer) {
 }
 
 template <typename Pairs>
-void getPairs(Context* context, const Pairs& result, uint32_t ptr_ptr, uint32_t size_ptr) {
+void getPairs(Context* context, const Pairs& result, uint64_t ptr_ptr, uint64_t size_ptr) {
   if (result.empty()) {
     context->wasm()->copyToPointerSize("", ptr_ptr, size_ptr);
     return;

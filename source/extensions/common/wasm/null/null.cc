@@ -49,6 +49,7 @@ using Plugin::WasmData;
 
 struct NullVm : public WasmVm {
   NullVm() = default;
+  NullVm(const NullVm& other) : plugin_(std::make_unique<NullVmPlugin>(*other.plugin_)) {}
   ~NullVm() override;
 
   // WasmVm
@@ -115,7 +116,7 @@ struct NullVm : public WasmVm {
 NullVm::~NullVm() {}
 
 std::unique_ptr<WasmVm> NullVm::clone() {
-  auto null_vm = std::make_unique<NullVm>();
+  auto null_vm = std::make_unique<NullVm>(*this);
   return null_vm;
 }
 
@@ -378,7 +379,7 @@ Context* NullVmPlugin::getContext(uint64_t context_id) {
   return it->second.get();
 }
 
-void NullVmPlugin::onStart() { ensureContext(0)->onCreate(); }
+void NullVmPlugin::onStart() { ensureContext(0)->onStart(); }
 
 void NullVmPlugin::onConfigure(uint64_t ptr, uint64_t size) {
   ensureContext(0)->onConfigure(std::make_unique<WasmData>(reinterpret_cast<char*>(ptr), size));
