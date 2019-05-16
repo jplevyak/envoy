@@ -19,7 +19,7 @@ inline void proxy_log(LogLevel level, const char* logMessage, size_t messageSize
 }
 
 // Timer
-inline void proxy_setTickPeriodMilliseconds(uint32_t millisecond) {
+inline void proxy_setTickPeriodMilliseconds(uint64_t millisecond) {
   setTickPeriodMillisecondsHandler(current_context_, Word(millisecond));
 }
 inline uint64_t proxy_getCurrentTimeNanoseconds() {
@@ -69,7 +69,7 @@ inline void proxy_getSharedData(const char* key_ptr, size_t key_size, const char
 //  If cas != 0 and cas != the current cas for 'key' return false, otherwise set the value and
 //  return true.
 inline bool proxy_setSharedData(const char* key_ptr, size_t key_size, const char* value_ptr,
-                                size_t value_size, uint32_t cas) {
+                                size_t value_size, uint64_t cas) {
   return setSharedDataHandler(current_context_, WR(key_ptr), WS(key_size), WR(value_ptr),
                               WS(value_size), WS(cas));
 }
@@ -101,47 +101,47 @@ inline void proxy_removeHeaderMapValue(HeaderMapType type, const char* key_ptr, 
 }
 
 // Body
-inline void proxy_getRequestBodyBufferBytes(uint32_t start, uint32_t length, const char** ptr,
+inline void proxy_getRequestBodyBufferBytes(uint64_t start, uint64_t length, const char** ptr,
                                             size_t* size) {
   getRequestBodyBufferBytesHandler(current_context_, Word(start), Word(length), WR(ptr), WR(size));
 }
-inline void proxy_getResponseBodyBufferBytes(uint32_t start, uint32_t length, const char** ptr,
+inline void proxy_getResponseBodyBufferBytes(uint64_t start, uint64_t length, const char** ptr,
                                              size_t* size) {
   getResponseBodyBufferBytesHandler(current_context_, WS(start), WS(length), WR(ptr), WR(size));
 }
 
 // HTTP
 // Returns token, used in callback onHttpCallResponse
-inline uint32_t proxy_httpCall(const char* uri_ptr, size_t uri_size, void* header_pairs_ptr,
+inline uint64_t proxy_httpCall(const char* uri_ptr, size_t uri_size, void* header_pairs_ptr,
                                size_t header_pairs_size, const char* body_ptr, size_t body_size,
                                void* trailer_pairs_ptr, size_t trailer_pairs_size,
-                               uint32_t timeout_milliseconds) {
+                               uint64_t timeout_milliseconds) {
   return httpCallHandler(current_context_, WR(uri_ptr), WS(uri_size), WR(header_pairs_ptr),
                          WS(header_pairs_size), WR(body_ptr), WS(body_size), WR(trailer_pairs_ptr),
                          WS(trailer_pairs_size), WS(timeout_milliseconds));
 }
 // gRPC
 // Returns token, used in gRPC callbacks (onGrpc...)
-inline uint32_t proxy_grpcCall(const char* service_ptr, size_t service_size,
+inline uint64_t proxy_grpcCall(const char* service_ptr, size_t service_size,
                                const char* service_name_ptr, size_t service_name_size,
                                const char* method_name_ptr, size_t method_name_size,
                                const char* request_ptr, size_t request_size,
-                               uint32_t timeout_milliseconds) {
+                               uint64_t timeout_milliseconds) {
   return grpcCallHandler(current_context_, WR(service_ptr), WS(service_size), WR(service_name_ptr),
                          WS(service_name_size), WR(method_name_ptr), WS(method_name_size),
                          WR(request_ptr), WS(request_size), WS(timeout_milliseconds));
 }
-inline uint32_t proxy_grpcStream(const char* service_ptr, size_t service_size,
+inline uint64_t proxy_grpcStream(const char* service_ptr, size_t service_size,
                                  const char* service_name_ptr, size_t service_name_size,
                                  const char* method_name_ptr, size_t method_name_size) {
   return grpcStreamHandler(current_context_, WR(service_ptr), WS(service_size),
                            WR(service_name_ptr), WS(service_name_size), WR(method_name_ptr),
                            WS(method_name_size));
 }
-inline void proxy_grpcCancel(uint32_t token) { grpcCancelHandler(current_context_, WS(token)); }
-inline void proxy_grpcClose(uint32_t token) { grpcCloseHandler(current_context_, WS(token)); }
-inline void proxy_grpcSend(uint32_t token, const char* message_ptr, size_t message_size,
-                           uint32_t end_stream) {
+inline void proxy_grpcCancel(uint64_t token) { grpcCancelHandler(current_context_, WS(token)); }
+inline void proxy_grpcClose(uint64_t token) { grpcCloseHandler(current_context_, WS(token)); }
+inline void proxy_grpcSend(uint64_t token, const char* message_ptr, size_t message_size,
+                           uint64_t end_stream) {
   grpcSendHandler(current_context_, WS(token), WR(message_ptr), WS(message_size), WS(end_stream));
 }
 
