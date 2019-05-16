@@ -161,6 +161,26 @@ private:
   bool module_needs_emscripten_{};
 };
 
+template <typename T> struct V8ProxyForGlobal : Global<T> {
+  V8ProxyForGlobal(wasm::Global* value) : global_(value) {}
+
+  T get() override { return global_->get().get<T>(); };
+  void set(const T& value) override { global_->set(wasm::Val::make(static_cast<T>(value))); };
+
+  wasm::Global* global_;
+};
+
+template <> struct V8ProxyForGlobal<Word> : Global<Word> {
+  V8ProxyForGlobal(wasm::Global* value) : global_(value) {}
+
+  Word get() override { return Word(global_->get().get<uint32_t>()); };
+  void set(const Word& value) override {
+    global_->set(wasm::Val::make(static_cast<uint32_t>(value.u64)));
+  };
+
+  wasm::Global* global_;
+};
+
 // Helper functions.
 
 static const char* printValKind(wasm::ValKind kind) {
@@ -196,6 +216,19 @@ static std::string printValTypes(const wasm::vec<wasm::ValType*>& types) {
   return s;
 }
 
+static bool equalValTypes(const wasm::vec<wasm::ValType*>& left,
+                          const wasm::vec<wasm::ValType*>& right) {
+  if (left.size() != right.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < left.size(); i++) {
+    if (left[i]->kind() != right[i]->kind()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 static uint32_t parseVarint(const byte_t*& pos, const byte_t* end) {
   uint32_t n = 0;
   uint32_t shift = 0;
@@ -211,18 +244,46 @@ static uint32_t parseVarint(const byte_t*& pos, const byte_t* end) {
   return n;
 }
 
-static bool equalValTypes(const wasm::vec<wasm::ValType*>& left,
-                          const wasm::vec<wasm::ValType*>& right) {
-  if (left.size() != right.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < left.size(); i++) {
-    if (left[i]->kind() != right[i]->kind()) {
-      return false;
-    }
-  }
-  return true;
+// Template magic.
+
+template <typename T> struct ConvertWordType { using type = T; };
+template <> struct ConvertWordType<Word> { using type = uint32_t; };
+
+template <typename T> wasm::Val makeVal(T t) { return wasm::Val::make(t); }
+template <> wasm::Val makeVal(Word t) { return wasm::Val::make(static_cast<uint32_t>(t.u64)); }
+
+template <typename T> constexpr auto convertArgToValKind();
+template <> constexpr auto convertArgToValKind<Word>() { return wasm::I32; };
+template <> constexpr auto convertArgToValKind<int32_t>() { return wasm::I32; };
+template <> constexpr auto convertArgToValKind<uint32_t>() { return wasm::I32; };
+template <> constexpr auto convertArgToValKind<int64_t>() { return wasm::I64; };
+template <> constexpr auto convertArgToValKind<uint64_t>() { return wasm::I64; };
+template <> constexpr auto convertArgToValKind<float>() { return wasm::F32; };
+template <> constexpr auto convertArgToValKind<double>() { return wasm::F64; };
+
+template <typename T, std::size_t... I>
+constexpr auto convertArgsTupleToValTypesImpl(absl::index_sequence<I...>) {
+  return wasm::vec<wasm::ValType*>::make(
+      wasm::ValType::make(convertArgToValKind<typename std::tuple_element<I, T>::type>())...);
 }
+
+template <typename T> constexpr auto convertArgsTupleToValTypes() {
+  return convertArgsTupleToValTypesImpl<T>(absl::make_index_sequence<std::tuple_size<T>::value>());
+}
+
+template <typename T, typename U, std::size_t... I>
+constexpr T convertValTypesToArgsTupleImpl(const U& arr, absl::index_sequence<I...>) {
+  return std::make_tuple(
+      (arr[I]
+           .template get<
+               typename ConvertWordType<typename std::tuple_element<I, T>::type>::type>())...);
+}
+
+template <typename T, typename U> constexpr T convertValTypesToArgsTuple(const U& arr) {
+  return convertValTypesToArgsTupleImpl<T>(arr,
+                                           absl::make_index_sequence<std::tuple_size<T>::value>());
+}
+
 
 // V8 implementation.
 
@@ -489,66 +550,6 @@ bool V8::setWord(uint64_t pointer, uint64_t word) {
   ::memcpy(memory_->data() + pointer, &word32, sizeof(uint32_t));
   return true;
 }
-
-// Template Magic
-
-template <typename T> struct ConvertWordType { using type = T; };
-template <> struct ConvertWordType<Word> { using type = uint32_t; };
-
-template <typename T> wasm::Val makeVal(T t) { return wasm::Val::make(t); }
-template <> wasm::Val makeVal(Word t) { return wasm::Val::make(static_cast<uint32_t>(t.u64)); }
-
-template <typename T> constexpr auto convertArgToValKind();
-template <> constexpr auto convertArgToValKind<Word>() { return wasm::I32; };
-template <> constexpr auto convertArgToValKind<int32_t>() { return wasm::I32; };
-template <> constexpr auto convertArgToValKind<uint32_t>() { return wasm::I32; };
-template <> constexpr auto convertArgToValKind<int64_t>() { return wasm::I64; };
-template <> constexpr auto convertArgToValKind<uint64_t>() { return wasm::I64; };
-template <> constexpr auto convertArgToValKind<float>() { return wasm::F32; };
-template <> constexpr auto convertArgToValKind<double>() { return wasm::F64; };
-
-template <typename T, std::size_t... I>
-constexpr auto convertArgsTupleToValTypesImpl(absl::index_sequence<I...>) {
-  return wasm::vec<wasm::ValType*>::make(
-      wasm::ValType::make(convertArgToValKind<typename std::tuple_element<I, T>::type>())...);
-}
-
-template <typename T> constexpr auto convertArgsTupleToValTypes() {
-  return convertArgsTupleToValTypesImpl<T>(absl::make_index_sequence<std::tuple_size<T>::value>());
-}
-
-template <typename T, typename U, std::size_t... I>
-constexpr T convertValTypesToArgsTupleImpl(const U& arr, absl::index_sequence<I...>) {
-  return std::make_tuple(
-      (arr[I]
-           .template get<
-               typename ConvertWordType<typename std::tuple_element<I, T>::type>::type>())...);
-}
-
-template <typename T, typename U> constexpr T convertValTypesToArgsTuple(const U& arr) {
-  return convertValTypesToArgsTupleImpl<T>(arr,
-                                           absl::make_index_sequence<std::tuple_size<T>::value>());
-}
-
-template <typename T> struct V8ProxyForGlobal : Global<T> {
-  V8ProxyForGlobal(wasm::Global* value) : global_(value) {}
-
-  T get() override { return global_->get().get<T>(); };
-  void set(const T& value) override { global_->set(wasm::Val::make(static_cast<T>(value))); };
-
-  wasm::Global* global_;
-};
-
-template <> struct V8ProxyForGlobal<Word> : Global<Word> {
-  V8ProxyForGlobal(wasm::Global* value) : global_(value) {}
-
-  Word get() override { return Word(global_->get().get<uint32_t>()); };
-  void set(const Word& value) override {
-    global_->set(wasm::Val::make(static_cast<uint32_t>(value.u64)));
-  };
-
-  wasm::Global* global_;
-};
 
 template <typename T>
 std::unique_ptr<Global<T>> V8::registerHostGlobalImpl(absl::string_view moduleName,

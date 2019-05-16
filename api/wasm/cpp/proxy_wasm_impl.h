@@ -3,7 +3,13 @@
  */
 // NOLINT(namespace-envoy)
 #include <string>
+#ifndef NULL_PLUGIN
 #include <string_view>
+using StringView = std::string_view;
+#else
+#include "absl/strings/string_view.h"
+using StringView = absl::string_view;
+#endif
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -44,9 +50,9 @@ public:
   WasmData(const char* data, size_t size) : data_(data), size_(size) {}
   ~WasmData() { ::free(const_cast<char*>(data_)); }
   const char* data() { return data_; }
-  std::string_view view() { return {data_, size_}; }
+  StringView view() { return {data_, size_}; }
   std::string toString() { return std::string(view()); }
-  std::vector<std::pair<std::string_view, std::string_view>> pairs();
+  std::vector<std::pair<StringView, StringView>> pairs();
   template<typename T> T proto() {
     T p;
     p.ParseFromArray(data_, size_);
@@ -62,8 +68,8 @@ private:
 };
 typedef std::unique_ptr<WasmData> WasmDataPtr;
 
-inline std::vector<std::pair<std::string_view, std::string_view>> WasmData::pairs() {
-  std::vector<std::pair<std::string_view, std::string_view>> result;
+inline std::vector<std::pair<StringView, StringView>> WasmData::pairs() {
+  std::vector<std::pair<StringView, StringView>> result;
   if (!data())
     return result;
   auto p = data();
@@ -74,11 +80,11 @@ inline std::vector<std::pair<std::string_view, std::string_view>> WasmData::pair
   for (int i = 0; i < n; i++) {
     int size = *reinterpret_cast<const int*>(p);
     p += sizeof(int);
-    result[i].first = std::string_view(s, size);
+    result[i].first = StringView(s, size);
     s += size + 1;
     size = *reinterpret_cast<const int*>(p);
     p += sizeof(int);
-    result[i].second = std::string_view(s, size);
+    result[i].second = StringView(s, size);
     s += size + 1;
   }
   return result;
@@ -178,7 +184,7 @@ public:
   virtual ~GrpcStreamHandlerBase() {}
 
   // NB: with end_of_stream == true, callbacks can still occur: reset() to prevent further callbacks.
-  void send(std::string_view message, bool end_of_stream);
+  void send(StringView message, bool end_of_stream);
   void close(); // NB: callbacks can still occur: reset() to prevent further callbacks.
   void reset();
 
@@ -270,16 +276,16 @@ public:
   using HttpCallCallback = std::function<void(std::unique_ptr<WasmData> header_pairs,
       std::unique_ptr<WasmData> body, std::unique_ptr<WasmData> trailer_pairs)>;
   using GrpcSimpleCallCallback = std::function<void(GrpcStatus status, std::unique_ptr<WasmData> message)>;
-  void httpCall(std::string_view uri, const HeaderStringPairs& request_headers,
-      std::string_view request_body, const HeaderStringPairs& request_trailers,
+  void httpCall(StringView uri, const HeaderStringPairs& request_headers,
+      StringView request_body, const HeaderStringPairs& request_trailers,
       uint32_t timeout_milliseconds, HttpCallCallback callback);
   // NB: the message is the response if status == OK and an error message otherwise.
-  void grpcSimpleCall(std::string_view service, std::string_view service_name, std::string_view method_name,
+  void grpcSimpleCall(StringView service, StringView service_name, StringView method_name,
       const google::protobuf::MessageLite &request, uint32_t timeout_milliseconds, GrpcSimpleCallCallback callback);
-  template<typename Response> void grpcSimpleCall(std::string_view service, std::string_view service_name,
-      std::string_view method_name, const google::protobuf::MessageLite &request, uint32_t timeout_milliseconds,
+  template<typename Response> void grpcSimpleCall(StringView service, StringView service_name,
+      StringView method_name, const google::protobuf::MessageLite &request, uint32_t timeout_milliseconds,
       std::function<void(Response&& response)> success_callback,
-      std::function<void(GrpcStatus status, std::string_view error_message)> failure_callback) {
+      std::function<void(GrpcStatus status, StringView error_message)> failure_callback) {
     auto callback = [success_callback, failure_callback](GrpcStatus status, std::unique_ptr<WasmData> message) {
       if (status == GrpcStatus::OK) {
         success_callback(message->proto<Response>());
@@ -289,38 +295,38 @@ public:
     };
     grpcSimpleCall(service, service_name, method_name, request, timeout_milliseconds, callback);
   }
-  void grpcCallHandler(std::string_view service, std::string_view service_name,
-      std::string_view method_name, const google::protobuf::MessageLite &request, uint32_t timeout_milliseconds,
+  void grpcCallHandler(StringView service, StringView service_name,
+      StringView method_name, const google::protobuf::MessageLite &request, uint32_t timeout_milliseconds,
       std::unique_ptr<GrpcCallHandlerBase> handler);
-  void grpcStreamHandler(std::string_view service, std::string_view service_name,
-      std::string_view method_name, std::unique_ptr<GrpcStreamHandlerBase> handler);
+  void grpcStreamHandler(StringView service, StringView service_name,
+      StringView method_name, std::unique_ptr<GrpcStreamHandlerBase> handler);
 
   // Metadata
   bool isImmutable(MetadataType type);
   virtual bool isProactivelyCachable(MetadataType type);  // Cache all keys on any read.
   // Caching Metadata calls.  Note: "name" refers to the metadata namespace.
-  google::protobuf::Value metadataValue(MetadataType type, std::string_view key);
-  google::protobuf::Value requestRouteMetadataValue(std::string_view key);
-  google::protobuf::Value responseRouteMetadataValue(std::string_view key);
-  google::protobuf::Value logMetadataValue(std::string_view key);
-  google::protobuf::Value requestMetadataValue(std::string_view key);
-  google::protobuf::Value responseMetadataValue(std::string_view key);
-  google::protobuf::Value nodeMetadataValue(std::string_view key);
-  google::protobuf::Value namedMetadataValue(MetadataType type, std::string_view name, std::string_view key);
-  google::protobuf::Value requestMetadataValue(std::string_view name, std::string_view key);
-  google::protobuf::Value responseMetadataValue(std::string_view name, std::string_view key);
-  google::protobuf::Struct metadataStruct(MetadataType type, std::string_view name = "");
+  google::protobuf::Value metadataValue(MetadataType type, StringView key);
+  google::protobuf::Value requestRouteMetadataValue(StringView key);
+  google::protobuf::Value responseRouteMetadataValue(StringView key);
+  google::protobuf::Value logMetadataValue(StringView key);
+  google::protobuf::Value requestMetadataValue(StringView key);
+  google::protobuf::Value responseMetadataValue(StringView key);
+  google::protobuf::Value nodeMetadataValue(StringView key);
+  google::protobuf::Value namedMetadataValue(MetadataType type, StringView name, StringView key);
+  google::protobuf::Value requestMetadataValue(StringView name, StringView key);
+  google::protobuf::Value responseMetadataValue(StringView name, StringView key);
+  google::protobuf::Struct metadataStruct(MetadataType type, StringView name = "");
   google::protobuf::Struct requestRouteMetadataStruct();
   google::protobuf::Struct responseRouteMetadataStruct();
   google::protobuf::Struct nodeMetadataStruct();
-  google::protobuf::Struct logMetadataStruct(std::string_view name = "");
-  google::protobuf::Struct requestMetadataStruct(std::string_view name = "");
-  google::protobuf::Struct responseMetadataStruct(std::string_view name = "");
+  google::protobuf::Struct logMetadataStruct(StringView name = "");
+  google::protobuf::Struct requestMetadataStruct(StringView name = "");
+  google::protobuf::Struct responseMetadataStruct(StringView name = "");
   // Uncached Metadata calls.
-  google::protobuf::Value getRequestMetadataValue(std::string_view key);
-  google::protobuf::Value getResponseMetadataValue(std::string_view key);
-  google::protobuf::Struct getRequestMetadataStruct(std::string_view name);
-  google::protobuf::Struct getResponseMetadataStruct(std::string_view name);
+  google::protobuf::Value getRequestMetadataValue(StringView key);
+  google::protobuf::Value getResponseMetadataValue(StringView key);
+  google::protobuf::Struct getRequestMetadataStruct(StringView name);
+  google::protobuf::Struct getResponseMetadataStruct(StringView name);
 
 private:
   friend class GrpcCallHandlerBase;
@@ -365,14 +371,14 @@ inline WasmDataPtr getProtocol(StreamType type) {
 }
 
 // Metadata
-inline WasmDataPtr getMetadata(MetadataType type, std::string_view key) {
+inline WasmDataPtr getMetadata(MetadataType type, StringView key) {
   const char* value_ptr = nullptr;
   size_t value_size = 0;
   proxy_getMetadata(type, key.data(), key.size(), &value_ptr, &value_size);
   return std::make_unique<WasmData>(value_ptr, value_size);
 }
 
-inline google::protobuf::Value getMetadataValue(MetadataType type, std::string_view key) {
+inline google::protobuf::Value getMetadataValue(MetadataType type, StringView key) {
   const char* value_ptr = nullptr;
   size_t value_size = 0;
   proxy_getMetadata(type, key.data(), key.size(), &value_ptr, &value_size);
@@ -386,15 +392,15 @@ inline google::protobuf::Value getMetadataValue(MetadataType type, std::string_v
   return value;
 }
 
-inline std::string getMetadataStringValue(MetadataType type, std::string_view key) {
+inline std::string getMetadataStringValue(MetadataType type, StringView key) {
   return getMetadataValue(type, key).string_value();
 }
 
-inline void setMetadata(MetadataType type, std::string_view key, std::string_view value) {
+inline void setMetadata(MetadataType type, StringView key, StringView value) {
   proxy_setMetadata(type, key.data(), key.size(), value.data(), value.size());
 }
 
-inline void setMetadataValue(MetadataType type, std::string_view key,
+inline void setMetadataValue(MetadataType type, StringView key,
                              const google::protobuf::Value& value) {
   std::string output;
   if (!value.SerializeToString(&output)) {
@@ -403,7 +409,7 @@ inline void setMetadataValue(MetadataType type, std::string_view key,
   proxy_setMetadata(type, key.data(), key.size(), output.data(), output.size());
 }
 
-inline void setMetadataStringValue(MetadataType type, std::string_view key, std::string_view s) {
+inline void setMetadataStringValue(MetadataType type, StringView key, StringView s) {
   google::protobuf::Value value;
   value.set_string_value(s.data(), s.size());
   setMetadataValue(type, key, value);
@@ -416,7 +422,7 @@ inline WasmDataPtr getMetadataValuePairs(MetadataType type) {
   return std::make_unique<WasmData>(value_ptr, value_size);
 }
 
-inline google::protobuf::Struct getMetadataStruct(MetadataType type, std::string_view name) {
+inline google::protobuf::Struct getMetadataStruct(MetadataType type, StringView name) {
   const char* value_ptr = nullptr;
   size_t value_size = 0;
   proxy_getMetadataStruct(type, name.data(), name.size(), &value_ptr, &value_size);
@@ -430,7 +436,7 @@ inline google::protobuf::Struct getMetadataStruct(MetadataType type, std::string
   return s;
 }
 
-inline void setMetadataStruct(MetadataType type, std::string_view name,
+inline void setMetadataStruct(MetadataType type, StringView name,
                              const google::protobuf::Struct& s) {
   std::string output;
   if (!s.SerializeToString(&output)) {
@@ -439,7 +445,7 @@ inline void setMetadataStruct(MetadataType type, std::string_view name,
   proxy_setMetadataStruct(type, name.data(), name.size(), output.data(), output.size());
 }
 
-inline google::protobuf::Value Context::metadataValue(MetadataType type, std::string_view key) {
+inline google::protobuf::Value Context::metadataValue(MetadataType type, StringView key) {
   auto cache_key = std::make_pair(type, std::string(key));
   auto it = value_cache_.find(cache_key);
   if (it != value_cache_.end()) {
@@ -466,31 +472,31 @@ inline google::protobuf::Value Context::metadataValue(MetadataType type, std::st
   }
 }
 
-inline google::protobuf::Value Context::requestRouteMetadataValue(std::string_view key) {
+inline google::protobuf::Value Context::requestRouteMetadataValue(StringView key) {
   return metadataValue(MetadataType::RequestRoute, key);
 }
 
-inline google::protobuf::Value Context::responseRouteMetadataValue(std::string_view key) {
+inline google::protobuf::Value Context::responseRouteMetadataValue(StringView key) {
   return metadataValue(MetadataType::ResponseRoute, key);
 }
 
-inline google::protobuf::Value Context::logMetadataValue(std::string_view key) {
+inline google::protobuf::Value Context::logMetadataValue(StringView key) {
   return metadataValue(MetadataType::Log, key);
 }
 
-inline google::protobuf::Value Context::requestMetadataValue(std::string_view key) {
+inline google::protobuf::Value Context::requestMetadataValue(StringView key) {
   return metadataValue(MetadataType::Request, key);
 }
 
-inline google::protobuf::Value Context::responseMetadataValue(std::string_view key) {
+inline google::protobuf::Value Context::responseMetadataValue(StringView key) {
   return metadataValue(MetadataType::Response, key);
 }
 
-inline google::protobuf::Value Context::nodeMetadataValue(std::string_view key) {
+inline google::protobuf::Value Context::nodeMetadataValue(StringView key) {
   return metadataValue(MetadataType::Node, key);
 }
 
-inline google::protobuf::Value Context::namedMetadataValue(MetadataType type, std::string_view name, std::string_view key) {
+inline google::protobuf::Value Context::namedMetadataValue(MetadataType type, StringView name, StringView key) {
   auto n = std::string(name);
   auto cache_key = std::make_tuple(type,  n, std::string(key));
   auto it = name_value_cache_.find(cache_key);
@@ -510,15 +516,15 @@ inline google::protobuf::Value Context::namedMetadataValue(MetadataType type, st
   return {};
 }
 
-inline google::protobuf::Value Context::requestMetadataValue(std::string_view name, std::string_view key) {
+inline google::protobuf::Value Context::requestMetadataValue(StringView name, StringView key) {
   return namedMetadataValue(MetadataType::Request, name, key);
 }
 
-inline google::protobuf::Value Context::responseMetadataValue(std::string_view name, std::string_view key) {
+inline google::protobuf::Value Context::responseMetadataValue(StringView name, StringView key) {
   return namedMetadataValue(MetadataType::Response, name, key);
 }
 
-inline google::protobuf::Struct Context::metadataStruct(MetadataType type, std::string_view name) {
+inline google::protobuf::Struct Context::metadataStruct(MetadataType type, StringView name) {
   auto cache_key = std::make_pair(type,  std::string(name));
   auto it = struct_cache_.find(cache_key);
   if (it != struct_cache_.end()) {
@@ -541,31 +547,31 @@ inline google::protobuf::Struct Context::nodeMetadataStruct() {
   return metadataStruct(MetadataType::Node);
 }
 
-inline google::protobuf::Struct Context::logMetadataStruct(std::string_view name) {
+inline google::protobuf::Struct Context::logMetadataStruct(StringView name) {
   return metadataStruct(MetadataType::Log, name);
 }
 
-inline google::protobuf::Struct Context::requestMetadataStruct(std::string_view name) {
+inline google::protobuf::Struct Context::requestMetadataStruct(StringView name) {
   return metadataStruct(MetadataType::Request, name);
 }
 
-inline google::protobuf::Struct Context::responseMetadataStruct(std::string_view name) {
+inline google::protobuf::Struct Context::responseMetadataStruct(StringView name) {
   return metadataStruct(MetadataType::Response, name);
 }
 
-inline google::protobuf::Value Context::getRequestMetadataValue(std::string_view key) {
+inline google::protobuf::Value Context::getRequestMetadataValue(StringView key) {
   return getMetadataValue(MetadataType::Request, key);
 }
 
-inline google::protobuf::Value Context::getResponseMetadataValue(std::string_view key) {
+inline google::protobuf::Value Context::getResponseMetadataValue(StringView key) {
   return getMetadataValue(MetadataType::Response, key);
 }
 
-inline google::protobuf::Struct Context::getRequestMetadataStruct(std::string_view name) {
+inline google::protobuf::Struct Context::getRequestMetadataStruct(StringView name) {
   return getMetadataStruct(MetadataType::Request, name);
 }
 
-inline google::protobuf::Struct Context::getResponseMetadataStruct(std::string_view name) {
+inline google::protobuf::Struct Context::getResponseMetadataStruct(StringView name) {
   return getMetadataStruct(MetadataType::Response, name);
 }
 
@@ -574,7 +580,7 @@ inline void continueRequest() { proxy_continueRequest(); }
 inline void continueResponse() { proxy_continueResponse(); }
 
 // Shared
-inline WasmDataPtr getSharedData(std::string_view key, uint32_t* cas = nullptr) {
+inline WasmDataPtr getSharedData(StringView key, uint32_t* cas = nullptr) {
   uint32_t dummy_cas;
   const char* value_ptr = nullptr;
   size_t value_size = 0;
@@ -584,27 +590,27 @@ inline WasmDataPtr getSharedData(std::string_view key, uint32_t* cas = nullptr) 
   return std::make_unique<WasmData>(value_ptr, value_size);
 }
 
-inline bool setSharedData(std::string_view key, std::string_view value, uint32_t cas = 0) {
+inline bool setSharedData(StringView key, StringView value, uint32_t cas = 0) {
   return proxy_setSharedData(key.data(), key.size(), value.data(), value.size(), cas);
 }
 
 // Headers/Trailers
-inline void addHeaderMapValue(HeaderMapType type, std::string_view key, std::string_view value) {
+inline void addHeaderMapValue(HeaderMapType type, StringView key, StringView value) {
   proxy_addHeaderMapValue(type, key.data(), key.size(), value.data(), value.size());
 }
 
-inline WasmDataPtr getHeaderMapValue(HeaderMapType type, std::string_view key) {
+inline WasmDataPtr getHeaderMapValue(HeaderMapType type, StringView key) {
   const char* value_ptr = nullptr;
   size_t value_size = 0;
   proxy_getHeaderMapValue(type, key.data(), key.size(), &value_ptr, &value_size);
   return std::make_unique<WasmData>(value_ptr, value_size);
 }
 
-inline void replaceHeaderMapValue(HeaderMapType type, std::string_view key, std::string_view value) {
+inline void replaceHeaderMapValue(HeaderMapType type, StringView key, StringView value) {
   proxy_replaceHeaderMapValue(type, key.data(), key.size(), value.data(), value.size());
 }
 
-inline void removeHeaderMapValue(HeaderMapType type, std::string_view key) {
+inline void removeHeaderMapValue(HeaderMapType type, StringView key) {
   proxy_removeHeaderMapValue(type, key.data(), key.size());
 }
 
@@ -622,16 +628,16 @@ inline void setHeaderMapPairs(HeaderMapType type, const HeaderStringPairs &pairs
   proxy_setHeaderMapPairs(type, ptr, size);
 }
 
-inline void addRequestHeader(std::string_view key, std::string_view value) {
+inline void addRequestHeader(StringView key, StringView value) {
   addHeaderMapValue(HeaderMapType::RequestHeaders, key, value);
 }
-inline WasmDataPtr getRequestHeader(std::string_view key) {
+inline WasmDataPtr getRequestHeader(StringView key) {
   return getHeaderMapValue(HeaderMapType::RequestHeaders, key);
 }
-inline void replaceRequestHeader(std::string_view key, std::string_view value) {
+inline void replaceRequestHeader(StringView key, StringView value) {
   replaceHeaderMapValue(HeaderMapType::RequestHeaders, key, value);
 }
-inline void removeRequestHeader(std::string_view key) {
+inline void removeRequestHeader(StringView key) {
   removeHeaderMapValue(HeaderMapType::RequestHeaders, key);
 }
 inline WasmDataPtr getRequestHeaderPairs() {
@@ -641,16 +647,16 @@ inline void setRequestHeaderPairs(const HeaderStringPairs &pairs) {
   return setHeaderMapPairs(HeaderMapType::RequestHeaders, pairs);
 }
 
-inline void addRequestTrailer(std::string_view key, std::string_view value) {
+inline void addRequestTrailer(StringView key, StringView value) {
   addHeaderMapValue(HeaderMapType::RequestTrailers, key, value);
 }
-inline WasmDataPtr getRequestTrailer(std::string_view key) {
+inline WasmDataPtr getRequestTrailer(StringView key) {
   return getHeaderMapValue(HeaderMapType::RequestTrailers, key);
 }
-inline void replaceRequestTrailer(std::string_view key, std::string_view value) {
+inline void replaceRequestTrailer(StringView key, StringView value) {
   replaceHeaderMapValue(HeaderMapType::RequestTrailers, key, value);
 }
-inline void removeRequestTrailer(std::string_view key) {
+inline void removeRequestTrailer(StringView key) {
   removeHeaderMapValue(HeaderMapType::RequestTrailers, key);
 }
 inline WasmDataPtr getRequestTrailerPairs() {
@@ -660,16 +666,16 @@ inline void setRequestTrailerPairs(const HeaderStringPairs &pairs) {
   return setHeaderMapPairs(HeaderMapType::RequestTrailers, pairs);
 }
 
-inline void addResponseHeader(std::string_view key, std::string_view value) {
+inline void addResponseHeader(StringView key, StringView value) {
   addHeaderMapValue(HeaderMapType::ResponseHeaders, key, value);
 }
-inline WasmDataPtr getResponseHeader(std::string_view key) {
+inline WasmDataPtr getResponseHeader(StringView key) {
   return getHeaderMapValue(HeaderMapType::ResponseHeaders, key);
 }
-inline void replaceResponseHeader(std::string_view key, std::string_view value) {
+inline void replaceResponseHeader(StringView key, StringView value) {
   replaceHeaderMapValue(HeaderMapType::ResponseHeaders, key, value);
 }
-inline void removeResponseHeader(std::string_view key) {
+inline void removeResponseHeader(StringView key) {
   removeHeaderMapValue(HeaderMapType::ResponseHeaders, key);
 }
 inline WasmDataPtr getResponseHeaderPairs() {
@@ -679,16 +685,16 @@ inline void setResponseHeaderPairs(const HeaderStringPairs &pairs) {
   return setHeaderMapPairs(HeaderMapType::ResponseHeaders, pairs);
 }
 
-inline void addResponseTrailer(std::string_view key, std::string_view value) {
+inline void addResponseTrailer(StringView key, StringView value) {
   addHeaderMapValue(HeaderMapType::ResponseTrailers, key, value);
 }
-inline WasmDataPtr getResponseTrailer(std::string_view key) {
+inline WasmDataPtr getResponseTrailer(StringView key) {
   return getHeaderMapValue(HeaderMapType::ResponseTrailers, key);
 }
-inline void replaceResponseTrailer(std::string_view key, std::string_view value) {
+inline void replaceResponseTrailer(StringView key, StringView value) {
   replaceHeaderMapValue(HeaderMapType::ResponseTrailers, key, value);
 }
-inline void removeResponseTrailer(std::string_view key) {
+inline void removeResponseTrailer(StringView key) {
   removeHeaderMapValue(HeaderMapType::ResponseTrailers, key);
 }
 inline WasmDataPtr getResponseTrailerPairs() {
@@ -750,8 +756,8 @@ inline void MakeHeaderStringPairsBuffer(const HeaderStringPairs& headers, void**
   *size_ptr = size;
 }
 
-inline uint32_t makeHttpCall(std::string_view uri, const HeaderStringPairs& request_headers,
-                             std::string_view request_body, const HeaderStringPairs& request_trailers,
+inline uint32_t makeHttpCall(StringView uri, const HeaderStringPairs& request_headers,
+                             StringView request_body, const HeaderStringPairs& request_trailers,
                              uint32_t timeout_milliseconds) {
   void *headers_ptr = nullptr, *trailers_ptr = nullptr;
   size_t headers_size = 0, trailers_size = 0;
@@ -767,7 +773,7 @@ inline uint32_t makeHttpCall(std::string_view uri, const HeaderStringPairs& requ
 
 // Low level metrics interface.
 
-inline uint32_t defineMetric(MetricType type, std::string_view name) {
+inline uint32_t defineMetric(MetricType type, StringView name) {
   return proxy_defineMetric(type, name.data(), name.size());
 }
 
@@ -913,10 +919,10 @@ template <typename... Fields> inline uint64_t Metric::get(Fields... f) {
 }
 
 template <typename T> struct MetricTagDescriptor {
-  MetricTagDescriptor(std::string_view n) : name(n) {}
+  MetricTagDescriptor(StringView n) : name(n) {}
   MetricTagDescriptor(const char* n) : name(n) {}
   typedef T type;
-  std::string_view name;
+  StringView name;
 };
 
 template <typename T> inline MetricTag ToMetricTag(const MetricTagDescriptor<T>&) { return {}; }
@@ -929,7 +935,7 @@ template <> inline MetricTag ToMetricTag(const MetricTagDescriptor<std::string>&
   return {std::string(d.name), MetricTag::TagType::String};
 }
 
-template <> inline MetricTag ToMetricTag(const MetricTagDescriptor<std::string_view>& d) {
+template <> inline MetricTag ToMetricTag(const MetricTagDescriptor<StringView>& d) {
   return {std::string(d.name), MetricTag::TagType::String};
 }
 
@@ -971,7 +977,7 @@ struct SimpleHistogram {
 };
 
 template <typename... Tags> struct Counter : public MetricBase {
-  static Counter<Tags...>* New(std::string_view name, MetricTagDescriptor<Tags>... fieldnames);
+  static Counter<Tags...>* New(StringView name, MetricTagDescriptor<Tags>... fieldnames);
 
   SimpleCounter resolve(Tags... f) {
     std::vector<std::string> fields{ToString(f)...};
@@ -1006,14 +1012,14 @@ private:
 };
 
 template <typename... Tags>
-inline Counter<Tags...>* Counter<Tags...>::New(std::string_view name,
+inline Counter<Tags...>* Counter<Tags...>::New(StringView name,
                                                MetricTagDescriptor<Tags>... descriptors) {
   return new Counter<Tags...>(std::string(name),
                               std::vector<MetricTag>({ToMetricTag(descriptors)...}));
 }
 
 template <typename... Tags> struct Gauge : public MetricBase {
-  static Gauge<Tags...>* New(std::string_view name, MetricTagDescriptor<Tags>... fieldnames);
+  static Gauge<Tags...>* New(StringView name, MetricTagDescriptor<Tags>... fieldnames);
 
   SimpleGauge resolve(Tags... f) {
     std::vector<std::string> fields{ToString(f)...};
@@ -1046,14 +1052,14 @@ private:
 };
 
 template <typename... Tags>
-inline Gauge<Tags...>* Gauge<Tags...>::New(std::string_view name,
+inline Gauge<Tags...>* Gauge<Tags...>::New(StringView name,
                                            MetricTagDescriptor<Tags>... descriptors) {
   return new Gauge<Tags...>(std::string(name),
                             std::vector<MetricTag>({ToMetricTag(descriptors)...}));
 }
 
 template <typename... Tags> struct Histogram : public MetricBase {
-  static Histogram<Tags...>* New(std::string_view name, MetricTagDescriptor<Tags>... fieldnames);
+  static Histogram<Tags...>* New(StringView name, MetricTagDescriptor<Tags>... fieldnames);
 
   SimpleHistogram resolve(Tags... f) {
     std::vector<std::string> fields{ToString(f)...};
@@ -1080,13 +1086,13 @@ private:
 };
 
 template <typename... Tags>
-inline Histogram<Tags...>* Histogram<Tags...>::New(std::string_view name,
+inline Histogram<Tags...>* Histogram<Tags...>::New(StringView name,
                                                    MetricTagDescriptor<Tags>... descriptors) {
   return new Histogram<Tags...>(std::string(name),
                                 std::vector<MetricTag>({ToMetricTag(descriptors)...}));
 }
 
-inline uint32_t grpcCall(std::string_view service, std::string_view service_name, std::string_view method_name,
+inline uint32_t grpcCall(StringView service, StringView service_name, StringView method_name,
     const google::protobuf::MessageLite &request, uint32_t timeout_milliseconds) {
   std::string serialized_request;
   request.SerializeToString(&serialized_request);
@@ -1095,7 +1101,7 @@ inline uint32_t grpcCall(std::string_view service, std::string_view service_name
                          
 }
 
-inline uint32_t grpcStream(std::string_view service, std::string_view service_name, std::string_view method_name) {
+inline uint32_t grpcStream(StringView service, StringView service_name, StringView method_name) {
   return proxy_grpcStream(service.data(), service.size(), service_name.data(), service_name.size(), method_name.data(), method_name.size());
 }
 
@@ -1107,12 +1113,12 @@ inline void grpcClose(uint32_t token) {
   return proxy_grpcClose(token);
 }
 
-inline void grpcSend(uint32_t token, std::string_view message, bool end_stream) {
+inline void grpcSend(uint32_t token, StringView message, bool end_stream) {
   return proxy_grpcSend(token, message.data(), message.size(), end_stream ? 1 : 0);
 }
 
-inline void Context::httpCall(std::string_view uri, const HeaderStringPairs& request_headers,
-    std::string_view request_body, const HeaderStringPairs& request_trailers,
+inline void Context::httpCall(StringView uri, const HeaderStringPairs& request_headers,
+    StringView request_body, const HeaderStringPairs& request_trailers,
     uint32_t timeout_milliseconds, HttpCallCallback callback) {
   auto token = makeHttpCall(uri, request_headers, request_body, request_trailers, timeout_milliseconds);
   if (token) {
@@ -1131,7 +1137,7 @@ inline void Context::onHttpCallResponse(uint32_t token, std::unique_ptr<WasmData
   }
 }
 
-inline void Context::grpcSimpleCall(std::string_view service, std::string_view service_name, std::string_view method_name,
+inline void Context::grpcSimpleCall(StringView service, StringView service_name, StringView method_name,
     const google::protobuf::MessageLite &request, uint32_t timeout_milliseconds, Context::GrpcSimpleCallCallback callback) {
   auto token = grpcCall(service, service_name, method_name, request, timeout_milliseconds);
   if (token) {
@@ -1160,7 +1166,7 @@ inline void GrpcStreamHandlerBase::close() {
   // NB: else callbacks can still occur: reset() to prevent further callbacks.
 }
 
-inline void GrpcStreamHandlerBase::send(std::string_view message, bool end_of_stream) {
+inline void GrpcStreamHandlerBase::send(StringView message, bool end_of_stream) {
   grpcSend(token_, message, end_of_stream);
   if (end_of_stream) {
     // NB: callbacks can still occur: reset() to prevent further callbacks.
@@ -1275,8 +1281,8 @@ inline void Context::onGrpcClose(uint32_t token, GrpcStatus status, std::unique_
   }
 }
 
-inline void Context::grpcCallHandler(std::string_view service, std::string_view service_name,
-    std::string_view method_name, const google::protobuf::MessageLite &request, uint32_t timeout_milliseconds,
+inline void Context::grpcCallHandler(StringView service, StringView service_name,
+    StringView method_name, const google::protobuf::MessageLite &request, uint32_t timeout_milliseconds,
     std::unique_ptr<GrpcCallHandlerBase> handler) {
   auto token = grpcCall(service, service_name, method_name, request, timeout_milliseconds);
   if (token) {
@@ -1287,8 +1293,8 @@ inline void Context::grpcCallHandler(std::string_view service, std::string_view 
   }
 }
 
-inline void Context::grpcStreamHandler(std::string_view service, std::string_view service_name,
-    std::string_view method_name, std::unique_ptr<GrpcStreamHandlerBase> handler) {
+inline void Context::grpcStreamHandler(StringView service, StringView service_name,
+    StringView method_name, std::unique_ptr<GrpcStreamHandlerBase> handler) {
   auto token = grpcStream(service, service_name, method_name);
   if (token) {
     handler->token_ = token;
