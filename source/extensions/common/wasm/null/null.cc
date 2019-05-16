@@ -101,7 +101,7 @@ struct NullVm : public WasmVm {
   _REGISTER_CALLBACK(WasmCallback_mj);
 #undef _REGISTER_CALLBACK
 
-  // NullVm does not advertize code as emscripten so this function is not used.
+  // NullVm does not advertize code as emscripten so this will not get called.
   std::unique_ptr<Global<double>> makeGlobal(absl::string_view, absl::string_view,
                                              double) override {
     NOT_REACHED_GCOVR_EXCL_LINE;
@@ -116,8 +116,7 @@ struct NullVm : public WasmVm {
 NullVm::~NullVm() {}
 
 std::unique_ptr<WasmVm> NullVm::clone() {
-  auto null_vm = std::make_unique<NullVm>(*this);
-  return null_vm;
+  return std::make_unique<NullVm>(*this);
 }
 
 bool NullVm::load(const std::string& name, bool /* allow_precompiled */) {
@@ -132,7 +131,7 @@ bool NullVm::load(const std::string& name, bool /* allow_precompiled */) {
 void NullVm::link(absl::string_view /* name */, bool /* needs_emscripten */) {}
 
 void NullVm::makeModule(absl::string_view /* name */) {
-  // NullVm does not advertize code as emscripten so this function is not used.
+  // NullVm does not advertize code as emscripten so this will not get called.
   NOT_REACHED_GCOVR_EXCL_LINE;
 }
 
@@ -163,7 +162,7 @@ bool NullVm::setWord(uint64_t pointer, uint64_t data) {
 }
 
 absl::string_view NullVm::getUserSection(absl::string_view /* name */) {
-  // Do not advertize code as emscripten.
+  // Return nothing: there is no WASM file.
   return {};
 }
 

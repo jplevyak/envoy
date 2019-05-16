@@ -486,9 +486,6 @@ void grpcSendHandler(void* raw_context, Word token, Word message_ptr, Word messa
   context->grpcSend(token, message, end_stream);
 }
 
-// Note: the ABI for 64-bit emscripten is unknown, so these are subject to change.
-Word getTotalMemoryHandler(void*) { return std::numeric_limits<int32_t>::max(); }
-
 Word _emscripten_get_heap_sizeHandler(void*) { return std::numeric_limits<int32_t>::max(); }
 
 Word _emscripten_memcpy_bigHandler(void*, Word, Word, Word) {
@@ -547,7 +544,9 @@ Word _pthread_equalHandler(void*, Word,
 Word _pthread_mutex_destroyHandler(void*, Word) {
   throw WasmException("emscripten pthread_mutex_destroy");
 }
-Word _pthread_cond_waitHandler(void*, Word, Word) { throw WasmException("emscripten pthread_cond_wait"); }
+Word _pthread_cond_waitHandler(void*, Word, Word) {
+  throw WasmException("emscripten pthread_cond_wait");
+}
 Word _pthread_getspecificHandler(void*, Word) {
   throw WasmException("emscripten pthread_getspecific");
 }

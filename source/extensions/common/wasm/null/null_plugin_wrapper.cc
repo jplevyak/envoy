@@ -8,7 +8,7 @@ namespace Null {
 namespace Plugin {
 namespace ExamplePlugin {
 std::unique_ptr<Plugin::Context> NewContext(uint32_t id);
-}  // namespace ExamplePlugin
+} // namespace ExamplePlugin
 
 /**
  * Config registration for a Wasm filter plugin. @see NamedHttpFilterConfigFactory.
