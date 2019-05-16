@@ -665,7 +665,6 @@ template <typename R, typename... Args>
 void V8::getModuleFunctionImpl(absl::string_view functionName,
                                std::function<R(Context*, Args...)>* function) {
   ENVOY_LOG(trace, "[wasm] getModuleFunction(\"{}\")", functionName);
-  ENVOY_LOG(trace, "[wasm] getModuleFunction(\"{}\")", functionName);
   auto it = module_functions_.find(functionName);
   if (it == module_functions_.end()) {
     *function = nullptr;

@@ -541,9 +541,8 @@ Word _pthread_equalHandler(void*, Word,
                            Word) { /* throw WasmException("emscripten pthread_equal"); */
   return 0;
 }
-Word _pthread_mutex_destroyHandler(void*, Word) {
-  throw WasmException("emscripten pthread_mutex_destroy");
-}
+// NB: the opencensus library calls this.
+Word _pthread_mutex_destroyHandler(void*, Word) { return 0; }
 Word _pthread_cond_waitHandler(void*, Word, Word) {
   throw WasmException("emscripten pthread_cond_wait");
 }
