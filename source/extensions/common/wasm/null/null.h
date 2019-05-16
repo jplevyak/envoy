@@ -109,7 +109,7 @@ public:
   virtual std::unique_ptr<NullVmPlugin> create() const PURE;
 };
 
-std::unique_ptr<WasmVm> createNullVm();
+std::unique_ptr<WasmVm> createVm();
 
 } // namespace Null
 } // namespace Wasm

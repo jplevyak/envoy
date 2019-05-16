@@ -547,15 +547,15 @@ Word _pthread_equalHandler(void*, Word,
 Word _pthread_mutex_destroyHandler(void*, Word) {
   throw WasmException("emscripten pthread_mutex_destroy");
 }
-Word _pthread_cond_waitHandler(void*, Word) { throw WasmException("emscripten pthread_cond_wait"); }
+Word _pthread_cond_waitHandler(void*, Word, Word) { throw WasmException("emscripten pthread_cond_wait"); }
 Word _pthread_getspecificHandler(void*, Word) {
   throw WasmException("emscripten pthread_getspecific");
 }
-Word _pthread_key_createHandler(void*, Word) {
+Word _pthread_key_createHandler(void*, Word, Word) {
   throw WasmException("emscripten pthread_key_create");
 }
-Word _pthread_onceHandler(void*, Word) { throw WasmException("emscripten pthread_once"); }
-Word _pthread_setspecificHandler(void*, Word) {
+Word _pthread_onceHandler(void*, Word, Word) { throw WasmException("emscripten pthread_once"); }
+Word _pthread_setspecificHandler(void*, Word, Word) {
   throw WasmException("emscripten pthread_setspecific");
 }
 void setTempRet0Handler(void*, Word) { throw WasmException("emscripten setTempRet0"); }
