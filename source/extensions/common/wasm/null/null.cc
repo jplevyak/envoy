@@ -167,7 +167,7 @@ absl::string_view NullVm::getUserSection(absl::string_view /* name */) {
   return {};
 }
 
-std::unique_ptr<WasmVm> createNullVm() { return std::make_unique<NullVm>(); }
+std::unique_ptr<WasmVm> createVm() { return std::make_unique<NullVm>(); }
 
 void NullVm::getFunction(absl::string_view functionName, WasmCall0Void* f) {
   if (functionName == "_proxy_onStart") {

@@ -779,10 +779,10 @@ public:
 inline Context::Context(Wasm* wasm) : wasm_(wasm), id_(wasm->allocContextId()) {}
 
 inline void* Wasm::allocMemory(uint64_t size, uint64_t* address) {
-  Word addr = malloc_(generalContext(), size);
-  *address = addr.u64;
-  // Note: this can thorw a WAVM exception.
-  return const_cast<void*>(reinterpret_cast<const void*>(wasm_vm_->getMemory(addr, size).data()));
+  uint32_t a = malloc_(generalContext(), size);
+  *address = a;
+  // Note: this can throw a WASM exception.
+  return const_cast<void*>(reinterpret_cast<const void*>(wasm_vm_->getMemory(a, size).data()));
 }
 
 inline void Wasm::freeMemoryOffset(uint64_t address) { free_(generalContext(), address); }

@@ -8,11 +8,11 @@ namespace Envoy {
 namespace Extensions {
 namespace Common {
 namespace Wasm {
-namespace Wavm {
+namespace V8 {
 
 std::unique_ptr<WasmVm> createVm();
 
-} // namespace Wavm
+} // namespace V8
 } // namespace Wasm
 } // namespace Common
 } // namespace Extensions

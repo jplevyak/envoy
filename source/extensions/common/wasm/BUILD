@@ -44,6 +44,7 @@ envoy_cc_library(
         "//source/common/http:utility_lib",
         "//source/common/tracing:http_tracer_lib",
         "//source/extensions/common/wasm/null:null_lib",
+        "//source/extensions/common/wasm/v8:v8_lib",
         "//source/extensions/common/wasm/wavm:wavm_lib",
     ],
 )
