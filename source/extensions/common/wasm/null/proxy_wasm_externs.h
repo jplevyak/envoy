@@ -39,7 +39,7 @@ inline void proxy_getMetadata(MetadataType type, const char* key_ptr, size_t key
 }
 inline void proxy_setMetadata(MetadataType type, const char* key_ptr, size_t key_size,
                               const char* value_ptr, size_t value_size) {
-  setMetadataHandler(current_context_, WS(type), WR(key_ptr), WR(key_size), WR(value_ptr),
+  setMetadataHandler(current_context_, WS(type), WR(key_ptr), WS(key_size), WR(value_ptr),
                      WS(value_size));
 }
 inline void proxy_getMetadataPairs(MetadataType type, const char** value_ptr, size_t* value_size) {
