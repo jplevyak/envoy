@@ -1164,8 +1164,8 @@ void Context::onHttpCallResponse(uint32_t token, const Pairs& response_headers,
   uint64_t headers_ptr, headers_size, trailers_ptr, trailers_size;
   exportPairs(this, response_headers, &headers_ptr, &headers_size);
   exportPairs(this, response_trailers, &trailers_ptr, &trailers_size);
-  uint32_t body_ptr = wasm_->copyString(response_body);
-  uint32_t body_size = response_body.size();
+  auto body_ptr = wasm_->copyString(response_body);
+  auto body_size = response_body.size();
   wasm_->onHttpCallResponse_(this, id_, token, headers_ptr, headers_size, body_ptr, body_size,
                              trailers_ptr, trailers_size);
 }
@@ -1655,8 +1655,8 @@ void GrpcStreamClientHandler::onReceiveTrailingMetadata(Http::HeaderMapPtr&& met
 
 void Context::onGrpcReceive(uint32_t token, Buffer::InstancePtr response) {
   if (wasm_->onGrpcReceive_) {
-    uint32_t response_size = response->length();
-    uint32_t response_ptr = wasm_->copyBuffer(*response);
+    auto response_size = response->length();
+    auto response_ptr = wasm_->copyBuffer(*response);
     wasm_->onGrpcReceive_(this, id_, token, response_ptr, response_size);
   }
   if (IsGrpcCallToken(token)) {
@@ -1667,8 +1667,8 @@ void Context::onGrpcReceive(uint32_t token, Buffer::InstancePtr response) {
 void Context::onGrpcClose(uint32_t token, const Grpc::Status::GrpcStatus& status,
                           const absl::string_view message) {
   if (wasm_->onGrpcClose_) {
-    uint32_t message_ptr = wasm_->copyString(message);
-    wasm_->onGrpcClose_(this, id_, token, static_cast<uint32_t>(status), message_ptr,
+    auto message_ptr = wasm_->copyString(message);
+    wasm_->onGrpcClose_(this, id_, token, static_cast<uint64_t>(status), message_ptr,
                         message.size());
   }
   if (IsGrpcCallToken(token)) {
