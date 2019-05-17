@@ -66,8 +66,11 @@ public:
                                             _type initialValue) override {                         \
     return registerHostGlobalImpl(moduleName, name, initialValue);                                 \
   };
-  _REGISTER_HOST_GLOBAL(Word);
   _REGISTER_HOST_GLOBAL(double);
+  std::unique_ptr<Global<Word>> makeGlobal(absl::string_view moduleName, absl::string_view name,
+                                           Word initialValue) override {
+    return registerHostWordGlobalImpl(moduleName, name, initialValue);
+  };
 #undef _REGISTER_HOST_GLOBAL
 
 #define _REGISTER_HOST_FUNCTION(_type)                                                             \
@@ -120,9 +123,8 @@ private:
   std::unique_ptr<Global<T>> registerHostGlobalImpl(absl::string_view moduleName,
                                                     absl::string_view name, T initialValue);
 
-  template <>
-  std::unique_ptr<Global<Word>> registerHostGlobalImpl(absl::string_view moduleName,
-                                                       absl::string_view name, Word initialValue);
+  std::unique_ptr<Global<Word>> registerHostWordGlobalImpl(absl::string_view moduleName,
+                                                           absl::string_view name, Word initialValue);
 
   template <typename... Args>
   void registerHostFunctionImpl(absl::string_view moduleName, absl::string_view functionName,
@@ -197,6 +199,8 @@ static const char* printValKind(wasm::ValKind kind) {
     return "anyref";
   case wasm::FUNCREF:
     return "funcref";
+  default:
+    return "unknown";
   }
 }
 
@@ -562,10 +566,9 @@ std::unique_ptr<Global<T>> V8::registerHostGlobalImpl(absl::string_view moduleNa
   return proxy;
 }
 
-template <>
-std::unique_ptr<Global<Word>> V8::registerHostGlobalImpl(absl::string_view moduleName,
-                                                         absl::string_view name,
-                                                         Word initialValue) {
+std::unique_ptr<Global<Word>> V8::registerHostWordGlobalImpl(absl::string_view moduleName,
+                                                             absl::string_view name,
+                                                             Word initialValue) {
   ENVOY_LOG(trace, "[wasm] registerHostGlobal(\"{}.{}\", {})", moduleName, name, initialValue);
   auto value = wasm::Val::make(static_cast<uint32_t>(initialValue.u64));
   auto type = wasm::GlobalType::make(wasm::ValType::make(value.kind()), wasm::CONST);
