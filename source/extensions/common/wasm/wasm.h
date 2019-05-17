@@ -40,6 +40,39 @@ struct Word {
   uint64_t u64;
 };
 
+template <typename T> struct ConvertWordTypeToUint32 { using type = T; };
+template <> struct ConvertWordTypeToUint32<Word> { using type = uint32_t; };
+
+inline uint32_t convertWordToUint32(Word w) { return static_cast<uint32_t>(w.u64); }
+inline uint32_t convertWordToUint32(uint32_t v) { return v; }
+inline uint64_t convertWordToUint32(uint64_t v) { return v; }
+inline int64_t convertWordToUint32(int64_t v) { return v; }
+inline float convertWordToUint32(float v) { return v; }
+inline double convertWordToUint32(double v) { return v; }
+
+// Convert a function of the form Word(Word...) to one of the form uint32_t(uint32_t...).
+template <typename F, F* fn> struct ConvertFunctionWordToUint32 {
+  static void convertFunctionWordToUint32() {}
+};
+template <typename R, typename... Args, auto (*F)(Args...)->R>
+struct ConvertFunctionWordToUint32<R(Args...), F> {
+  static auto convertFunctionWordToUint32(typename ConvertWordTypeToUint32<Args>::type... args) {
+    return convertWordToUint32(F(std::forward<Args>(args)...));
+  }
+};
+template <typename... Args, auto (*F)(Args...)->void>
+struct ConvertFunctionWordToUint32<void(Args...), F> {
+  static void convertFunctionWordToUint32(typename ConvertWordTypeToUint32<Args>::type... args) {
+    F(std::forward<Args>(args)...);
+  }
+};
+
+template <typename F> struct ConvertFunctionTypeWordToUint32 {};
+template <typename R, typename... Args> struct ConvertFunctionTypeWordToUint32<R (*)(Args...)> {
+  using type = typename ConvertWordTypeToUint32<R>::type (*)(
+      typename ConvertWordTypeToUint32<Args>::type...);
+};
+
 using Pairs = std::vector<std::pair<absl::string_view, absl::string_view>>;
 using PairsWithStringValues = std::vector<std::pair<absl::string_view, std::string>>;
 
@@ -698,47 +731,30 @@ public:
   virtual void getFunction(absl::string_view functionName, WasmCall3Int* f) PURE;
 
   // Register typed callbacks exported by the host environment.
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback0Void f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback1Void f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback2Void f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback3Void f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback4Void f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback5Void f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback0Int f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback1Int f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback2Int f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback3Int f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback4Int f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback5Int f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback6Int f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback7Int f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback8Int f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback9Int f) PURE;
-
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback_Zjl f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback_Zjm f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback_mjj f) PURE;
-  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,
-                                WasmCallback_mj f) PURE;
+#define REGISTER_CALLBACK(_t)                                                                      \
+  virtual void registerCallback(absl::string_view moduleName, absl::string_view functionName,      \
+                                _t f, typename ConvertFunctionTypeWordToUint32<_t>::type) PURE;
+  REGISTER_CALLBACK(WasmCallback0Void);
+  REGISTER_CALLBACK(WasmCallback1Void);
+  REGISTER_CALLBACK(WasmCallback2Void);
+  REGISTER_CALLBACK(WasmCallback3Void);
+  REGISTER_CALLBACK(WasmCallback4Void);
+  REGISTER_CALLBACK(WasmCallback5Void);
+  REGISTER_CALLBACK(WasmCallback0Int);
+  REGISTER_CALLBACK(WasmCallback1Int);
+  REGISTER_CALLBACK(WasmCallback2Int);
+  REGISTER_CALLBACK(WasmCallback3Int);
+  REGISTER_CALLBACK(WasmCallback4Int);
+  REGISTER_CALLBACK(WasmCallback5Int);
+  REGISTER_CALLBACK(WasmCallback6Int);
+  REGISTER_CALLBACK(WasmCallback7Int);
+  REGISTER_CALLBACK(WasmCallback8Int);
+  REGISTER_CALLBACK(WasmCallback9Int);
+  REGISTER_CALLBACK(WasmCallback_Zjl);
+  REGISTER_CALLBACK(WasmCallback_Zjm);
+  REGISTER_CALLBACK(WasmCallback_mjj);
+  REGISTER_CALLBACK(WasmCallback_mj);
+#undef REGISTER_CALLBACK
 
   // Register typed value exported by the host environment.
   virtual std::unique_ptr<Global<Word>> makeGlobal(absl::string_view module_name,

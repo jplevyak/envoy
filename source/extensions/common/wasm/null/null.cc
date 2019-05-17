@@ -78,7 +78,8 @@ struct NullVm : public WasmVm {
 
   // These are noops for NullVm.
 #define _REGISTER_CALLBACK(_type)                                                                  \
-  void registerCallback(absl::string_view, absl::string_view, _type) override{};
+  void registerCallback(absl::string_view, absl::string_view, _type,                               \
+                        typename ConvertFunctionTypeWordToUint32<_type>::type) override{};
   _REGISTER_CALLBACK(WasmCallback0Void);
   _REGISTER_CALLBACK(WasmCallback1Void);
   _REGISTER_CALLBACK(WasmCallback2Void);
@@ -115,9 +116,7 @@ struct NullVm : public WasmVm {
 
 NullVm::~NullVm() {}
 
-std::unique_ptr<WasmVm> NullVm::clone() {
-  return std::make_unique<NullVm>(*this);
-}
+std::unique_ptr<WasmVm> NullVm::clone() { return std::make_unique<NullVm>(*this); }
 
 bool NullVm::load(const std::string& name, bool /* allow_precompiled */) {
   auto factory = Registry::FactoryRegistry<NullVmPluginFactory>::getFactory(name);

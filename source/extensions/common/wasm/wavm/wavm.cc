@@ -69,6 +69,9 @@ void getFunctionWavm(WasmVm* vm, absl::string_view functionName,
 template <typename R, typename... Args>
 void registerCallbackWavm(WasmVm* vm, absl::string_view moduleName, absl::string_view functionName,
                           R (*)(Args...));
+template <typename F, typename R, typename... Args>
+void registerCallbackWavm(WasmVm* vm, absl::string_view moduleName, absl::string_view functionName,
+                          F, R (*)(Args...));
 template <typename T>
 std::unique_ptr<Global<T>> makeGlobalWavm(WasmVm* vm, absl::string_view moduleName,
                                           absl::string_view name, T initialValue);
@@ -260,8 +263,8 @@ struct Wavm : public WasmVm {
 #undef _GET_FUNCTION
 
 #define _REGISTER_CALLBACK(_type)                                                                  \
-  void registerCallback(absl::string_view moduleName, absl::string_view functionName, _type f)     \
-      override {                                                                                   \
+  void registerCallback(absl::string_view moduleName, absl::string_view functionName, _type,       \
+                        typename ConvertFunctionTypeWordToUint32<_type>::type f) override {        \
     registerCallbackWavm(this, moduleName, functionName, f);                                       \
   };
   _REGISTER_CALLBACK(WasmCallback0Void);

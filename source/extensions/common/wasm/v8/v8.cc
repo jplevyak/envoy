@@ -71,8 +71,8 @@ public:
 #undef _REGISTER_HOST_GLOBAL
 
 #define _REGISTER_HOST_FUNCTION(_type)                                                             \
-  void registerCallback(absl::string_view moduleName, absl::string_view functionName, _type f)     \
-      override {                                                                                   \
+  void registerCallback(absl::string_view moduleName, absl::string_view functionName, _type,       \
+                        typename ConvertFunctionTypeWordToUint32<_type>::type f) override {        \
     registerHostFunctionImpl(moduleName, functionName, f);                                         \
   };
   _REGISTER_HOST_FUNCTION(WasmCallback0Void);
@@ -283,7 +283,6 @@ template <typename T, typename U> constexpr T convertValTypesToArgsTuple(const U
   return convertValTypesToArgsTupleImpl<T>(arr,
                                            absl::make_index_sequence<std::tuple_size<T>::value>());
 }
-
 
 // V8 implementation.
 

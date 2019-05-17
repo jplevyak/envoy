@@ -1284,7 +1284,11 @@ Wasm::Wasm(absl::string_view vm, absl::string_view id, absl::string_view initial
 }
 
 void Wasm::registerCallbacks() {
-#define _REGISTER(_fn) wasm_vm_->registerCallback("envoy", #_fn, &_fn##Handler);
+#define _REGISTER(_fn)                                                                             \
+  wasm_vm_->registerCallback(                                                                      \
+      "envoy", #_fn, &_fn##Handler,                                                                \
+      &ConvertFunctionWordToUint32<decltype(_fn##Handler),                                         \
+                                   _fn##Handler>::convertFunctionWordToUint32);
   if (is_emscripten_) {
     _REGISTER(_emscripten_memcpy_big);
     _REGISTER(_emscripten_get_heap_size);
@@ -1318,7 +1322,11 @@ void Wasm::registerCallbacks() {
 #undef _REGISTER
 
   // Calls with the "_proxy_" prefix.
-#define _REGISTER_PROXY(_fn) wasm_vm_->registerCallback("envoy", "_proxy_" #_fn, &_fn##Handler);
+#define _REGISTER_PROXY(_fn)                                                                       \
+  wasm_vm_->registerCallback(                                                                      \
+      "envoy", "_proxy_" #_fn, &_fn##Handler,                                                      \
+      &ConvertFunctionWordToUint32<decltype(_fn##Handler),                                         \
+                                   _fn##Handler>::convertFunctionWordToUint32);
   _REGISTER_PROXY(log);
 
   _REGISTER_PROXY(getProtocol);
