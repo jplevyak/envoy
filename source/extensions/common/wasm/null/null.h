@@ -4,10 +4,6 @@
 
 #include "extensions/common/wasm/wasm.h"
 
-namespace std {
-using string_view = absl::string_view;
-}
-
 namespace Envoy {
 namespace Extensions {
 namespace Common {
@@ -21,6 +17,7 @@ using FilterTrailersStatus = Http::FilterTrailersStatus;
 using FilterDataStatus = Http::FilterDataStatus;
 using GrpcStatus = ProtobufUtil::error::Code;
 using MetricType = Envoy::Extensions::Common::Wasm::Context::MetricType;
+using StringView = absl::string_view;
 } // namespace Plugin
 } // namespace Null
 } // namespace Wasm

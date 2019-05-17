@@ -3,13 +3,6 @@
  */
 // NOLINT(namespace-envoy)
 #include <string>
-#ifndef NULL_PLUGIN
-#include <string_view>
-using StringView = std::string_view;
-#else
-#include "absl/strings/string_view.h"
-using StringView = absl::string_view;
-#endif
 #include <tuple>
 #include <unordered_map>
 #include <utility>
