@@ -1,5 +1,5 @@
 /*
- * Intrinsic functions available to WASM modules.
+ * Intrinsic high-level support functions available to WASM modules.
  */
 // NOLINT(namespace-envoy)
 #include <string>

@@ -1,5 +1,5 @@
 /*
- * Intrinsic functions available to WASM modules.
+ * API Available to WASM modules.
  */
 // NOLINT(namespace-envoy)
 
