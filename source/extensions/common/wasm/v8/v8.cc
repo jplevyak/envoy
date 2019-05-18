@@ -67,10 +67,13 @@ public:
     return registerHostGlobalImpl(moduleName, name, initialValue);                                 \
   };
   _REGISTER_HOST_GLOBAL(double);
+  _REGISTER_HOST_GLOBAL(Word);
+#if 0
   std::unique_ptr<Global<Word>> makeGlobal(absl::string_view moduleName, absl::string_view name,
                                            Word initialValue) override {
     return registerHostWordGlobalImpl(moduleName, name, initialValue);
   };
+#endif
 #undef _REGISTER_HOST_GLOBAL
 
 #define _REGISTER_HOST_FUNCTION(_type)                                                             \
@@ -123,9 +126,6 @@ private:
   std::unique_ptr<Global<T>> registerHostGlobalImpl(absl::string_view moduleName,
                                                     absl::string_view name, T initialValue);
 
-  std::unique_ptr<Global<Word>> registerHostWordGlobalImpl(absl::string_view moduleName,
-                                                           absl::string_view name, Word initialValue);
-
   template <typename... Args>
   void registerHostFunctionImpl(absl::string_view moduleName, absl::string_view functionName,
                                 void (*function)(void*, Args...));
@@ -133,10 +133,6 @@ private:
   template <typename R, typename... Args>
   void registerHostFunctionImpl(absl::string_view moduleName, absl::string_view functionName,
                                 R (*function)(void*, Args...));
-
-  template <typename... Args>
-  void registerHostFunctionImpl(absl::string_view moduleName, absl::string_view functionName,
-                                Word (*function)(void*, Args...));
 
   template <typename... Args>
   void getModuleFunctionImpl(absl::string_view functionName,
@@ -558,22 +554,10 @@ template <typename T>
 std::unique_ptr<Global<T>> V8::registerHostGlobalImpl(absl::string_view moduleName,
                                                       absl::string_view name, T initialValue) {
   ENVOY_LOG(trace, "[wasm] registerHostGlobal(\"{}.{}\", {})", moduleName, name, initialValue);
-  auto value = wasm::Val::make(initialValue);
+  auto value = makeVal(initialValue);
   auto type = wasm::GlobalType::make(wasm::ValType::make(value.kind()), wasm::CONST);
   auto global = wasm::Global::make(store_.get(), type.get(), value);
   auto proxy = std::make_unique<V8ProxyForGlobal<T>>(global.get());
-  host_globals_.emplace(absl::StrCat(moduleName, ".", name), std::move(global));
-  return proxy;
-}
-
-std::unique_ptr<Global<Word>> V8::registerHostWordGlobalImpl(absl::string_view moduleName,
-                                                             absl::string_view name,
-                                                             Word initialValue) {
-  ENVOY_LOG(trace, "[wasm] registerHostGlobal(\"{}.{}\", {})", moduleName, name, initialValue);
-  auto value = wasm::Val::make(static_cast<uint32_t>(initialValue.u64));
-  auto type = wasm::GlobalType::make(wasm::ValType::make(value.kind()), wasm::CONST);
-  auto global = wasm::Global::make(store_.get(), type.get(), value);
-  auto proxy = std::make_unique<V8ProxyForGlobal<Word>>(global.get());
   host_globals_.emplace(absl::StrCat(moduleName, ".", name), std::move(global));
   return proxy;
 }
@@ -610,27 +594,7 @@ void V8::registerHostFunctionImpl(absl::string_view moduleName, absl::string_vie
         auto args = std::tuple_cat(std::make_tuple(current_context_), args_tuple);
         auto function = reinterpret_cast<R (*)(void*, Args...)>(data);
         R rvalue = absl::apply(function, args);
-        results[0] = wasm::Val::make(rvalue);
-        return nullptr;
-      },
-      reinterpret_cast<void*>(function));
-  host_functions_.emplace(absl::StrCat(moduleName, ".", functionName), std::move(func));
-}
-
-template <typename... Args>
-void V8::registerHostFunctionImpl(absl::string_view moduleName, absl::string_view functionName,
-                                  Word (*function)(void*, Args...)) {
-  ENVOY_LOG(trace, "[wasm] registerHostFunction(\"{}.{}\")", moduleName, functionName);
-  auto type = wasm::FuncType::make(convertArgsTupleToValTypes<std::tuple<Args...>>(),
-                                   convertArgsTupleToValTypes<std::tuple<Word>>());
-  auto func = wasm::Func::make(
-      store_.get(), type.get(),
-      [](void* data, const wasm::Val params[], wasm::Val results[]) -> wasm::own<wasm::Trap*> {
-        auto args_tuple = convertValTypesToArgsTuple<std::tuple<Args...>>(params);
-        auto args = std::tuple_cat(std::make_tuple(current_context_), args_tuple);
-        auto function = reinterpret_cast<Word (*)(void*, Args...)>(data);
-        Word rvalue = absl::apply(function, args);
-        results[0] = wasm::Val::make(static_cast<uint32_t>(rvalue.u64));
+        results[0] = makeVal(rvalue);
         return nullptr;
       },
       reinterpret_cast<void*>(function));
