@@ -796,8 +796,8 @@ public:
 inline Context::Context(Wasm* wasm) : wasm_(wasm), id_(wasm->allocContextId()) {}
 
 inline void* Wasm::allocMemory(uint64_t size, uint64_t* address) {
-  uint32_t a = malloc_(generalContext(), size);
-  *address = a;
+  Word a = malloc_(generalContext(), size);
+  *address = a.u64;
   // Note: this can throw a WASM exception.
   return const_cast<void*>(reinterpret_cast<const void*>(wasm_vm_->getMemory(a, size).data()));
 }
