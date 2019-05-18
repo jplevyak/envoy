@@ -11,7 +11,7 @@ envoy_package()
 envoy_cc_library(
     name = "null_plugin_hdr",
     hdrs = [
-        "proxy_wasm_externs.h",
+        "wasm_api_impl.h",
     ],
     deps = [
         "//api/wasm/cpp:intrinsics_hdr",

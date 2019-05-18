@@ -25,7 +25,7 @@ using StringView = absl::string_view;
 } // namespace Extensions
 } // namespace Envoy
 
-#include "extensions/common/wasm/null/proxy_wasm_externs.h"
+#include "extensions/common/wasm/null/wasm_api_impl.h"
 
 namespace Envoy {
 namespace Extensions {
