@@ -31,7 +31,6 @@ using testing::Invoke;
 using testing::Return;
 using testing::ReturnPointee;
 using testing::ReturnRef;
-using testing::StrEq;
 
 MATCHER_P(MapEq, rhs, "") {
   const Envoy::ProtobufWkt::Struct& obj = arg;
@@ -124,8 +123,8 @@ TEST_P(WasmHttpFilterTest, HeadersOnlyRequestHeadersOnly) {
   wasm_->start();
   Http::TestHeaderMapImpl request_headers{{":path", "/"}, {"server", "envoy"}};
   EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_->decodeHeaders(request_headers, true));
-  EXPECT_THAT(request_headers.get_("newheader"), StrEq("newheadervalue"));
-  EXPECT_THAT(request_headers.get_("server"), StrEq("envoy-wasm"));
+  EXPECT_THAT(request_headers.get_("newheader"), Eq("newheadervalue"));
+  EXPECT_THAT(request_headers.get_("server"), Eq("envoy-wasm"));
   filter_->onDestroy();
 }
 
@@ -196,8 +195,8 @@ TEST_P(WasmHttpFilterTest, AsyncCall) {
             return &request;
           }));
 
-  EXPECT_CALL(*filter_, scriptLog(spdlog::level::debug, StrEq("response")));
-  EXPECT_CALL(*filter_, scriptLog(spdlog::level::info, StrEq(":status -> 200")));
+  EXPECT_CALL(*filter_, scriptLog(spdlog::level::debug, Eq("response")));
+  EXPECT_CALL(*filter_, scriptLog(spdlog::level::info, Eq(":status -> 200")));
   EXPECT_EQ(Http::FilterHeadersStatus::StopIteration,
             filter_->decodeHeaders(request_headers, false));
 
@@ -247,7 +246,7 @@ TEST_P(WasmHttpFilterTest, GrpcCall) {
       .WillOnce(
           Invoke([&](const envoy::api::v2::core::GrpcService&, Stats::Scope&,
                      bool) -> Grpc::AsyncClientFactoryPtr { return std::move(client_factory); }));
-  EXPECT_CALL(*filter_, scriptLog(spdlog::level::debug, StrEq("response")));
+  EXPECT_CALL(*filter_, scriptLog(spdlog::level::debug, Eq("response")));
   Http::TestHeaderMapImpl request_headers{{":path", "/"}};
   EXPECT_EQ(Http::FilterHeadersStatus::StopIteration,
             filter_->decodeHeaders(request_headers, false));
@@ -322,8 +321,8 @@ TEST_F(WasmHttpFilterTest, NullVmPluginRequestHeadersOnly) {
   wasm_->start();
   Http::TestHeaderMapImpl request_headers{{":path", "/"}, {"server", "envoy"}};
   EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_->decodeHeaders(request_headers, true));
-  EXPECT_THAT(request_headers.get_("newheader"), StrEq("newheadervalue"));
-  EXPECT_THAT(request_headers.get_("server"), StrEq("envoy-wasm"));
+  EXPECT_THAT(request_headers.get_("newheader"), Eq("newheadervalue"));
+  EXPECT_THAT(request_headers.get_("server"), Eq("envoy-wasm"));
   filter_->onDestroy();
 }
 
