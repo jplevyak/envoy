@@ -142,10 +142,6 @@ private:
   void getModuleFunctionImpl(absl::string_view functionName,
                              std::function<R(Context*, Args...)>* function);
 
-  template <typename... Args>
-  void getModuleFunctionImpl(absl::string_view functionName,
-                             std::function<Word(Context*, Args...)>* function);
-
   wasm::vec<byte_t> source_ = wasm::vec<byte_t>::invalid();
   wasm::own<wasm::Store*> store_;
   wasm::own<wasm::Module*> module_;
@@ -653,37 +649,7 @@ void V8::getModuleFunctionImpl(absl::string_view functionName,
           fmt::format("Function: {} failed: {}", functionName,
                       absl::string_view(trap->message().get(), trap->message().size())));
     }
-    R rvalue = results[0].get<R>();
-    return rvalue;
-  };
-}
-
-template <typename... Args>
-void V8::getModuleFunctionImpl(absl::string_view functionName,
-                               std::function<Word(Context*, Args...)>* function) {
-  ENVOY_LOG(trace, "[wasm] getModuleFunction(\"{}\")", functionName);
-  auto it = module_functions_.find(functionName);
-  if (it == module_functions_.end()) {
-    *function = nullptr;
-    return;
-  }
-  const wasm::Func* func = it->second.get();
-  if (!equalValTypes(func->type()->params(), convertArgsTupleToValTypes<std::tuple<Args...>>()) ||
-      !equalValTypes(func->type()->results(), convertArgsTupleToValTypes<std::tuple<Word>>())) {
-    throw WasmVmException(fmt::format("Bad function signature for: {}", functionName));
-  }
-  *function = [func, functionName](Context* context, Args... args) -> Word {
-    ENVOY_LOG(trace, "[wasm] callModuleFunction(\"{}\")", functionName);
-    current_context_ = context;
-    wasm::Val params[] = {makeVal(args)...};
-    wasm::Val results[1];
-    auto trap = func->call(params, results);
-    if (trap) {
-      throw WasmVmException(
-          fmt::format("Function: {} failed: {}", functionName,
-                      absl::string_view(trap->message().get(), trap->message().size())));
-    }
-    Word rvalue(results[0].get<uint32_t>());
+    R rvalue = results[0].get<typename ConvertWordTypeToUint32<R>::type>();
     return rvalue;
   };
 }
