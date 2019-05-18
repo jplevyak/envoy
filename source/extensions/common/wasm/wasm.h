@@ -135,11 +135,12 @@ using WasmCallback9Int = Word (*)(void*, Word, Word, Word, Word, Word, Word, Wor
                                   Word);
 // Using the standard g++/clang mangling algorithm:
 // https://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling-builtin
+// Extended with W = Word
 // Z = void, j = uint32_t, l = int64_t, m = uint64_t
-using WasmCallback_Zjl = void (*)(void*, uint32_t, int64_t);
-using WasmCallback_Zjm = void (*)(void*, uint32_t, uint64_t);
-using WasmCallback_mjj = uint64_t (*)(void*, uint32_t);
-using WasmCallback_mj = uint64_t (*)(void*);
+using WasmCallback_ZWl = void (*)(void*, Word, int64_t);
+using WasmCallback_ZWm = void (*)(void*, Word, uint64_t);
+using WasmCallback_m = uint64_t (*)(void*);
+using WasmCallback_mW = uint64_t (*)(void*, Word);
 
 // Sadly we don't have enum class inheritance in c++-14.
 enum class StreamType : uint32_t { Request = 0, Response = 1, MAX = 1 };
@@ -198,9 +199,9 @@ Word httpCallHandler(void* raw_context, Word uri_ptr, Word uri_size, Word header
                      Word header_pairs_size, Word body_ptr, Word body_size, Word trailer_pairs_ptr,
                      Word trailer_pairs_size, Word timeout_milliseconds);
 Word defineMetricHandler(void* raw_context, Word metric_type, Word name_ptr, Word name_size);
-void incrementMetricHandler(void* raw_context, uint32_t metric_id, int64_t offset);
-void recordMetricHandler(void* raw_context, uint32_t metric_id, uint64_t value);
-uint64_t getMetricHandler(void* raw_context, uint32_t metric_id);
+void incrementMetricHandler(void* raw_context, Word metric_id, int64_t offset);
+void recordMetricHandler(void* raw_context, Word metric_id, uint64_t value);
+uint64_t getMetricHandler(void* raw_context, Word metric_id);
 Word grpcCallHandler(void* raw_context, Word service_ptr, Word service_size, Word service_name_ptr,
                      Word service_name_size, Word method_name_ptr, Word method_name_size,
                      Word request_ptr, Word request_size, Word timeout_milliseconds);
@@ -750,10 +751,10 @@ public:
   REGISTER_CALLBACK(WasmCallback7Int);
   REGISTER_CALLBACK(WasmCallback8Int);
   REGISTER_CALLBACK(WasmCallback9Int);
-  REGISTER_CALLBACK(WasmCallback_Zjl);
-  REGISTER_CALLBACK(WasmCallback_Zjm);
-  REGISTER_CALLBACK(WasmCallback_mjj);
-  REGISTER_CALLBACK(WasmCallback_mj);
+  REGISTER_CALLBACK(WasmCallback_ZWl);
+  REGISTER_CALLBACK(WasmCallback_ZWm);
+  REGISTER_CALLBACK(WasmCallback_m);
+  REGISTER_CALLBACK(WasmCallback_mW);
 #undef REGISTER_CALLBACK
 
   // Register typed value exported by the host environment.

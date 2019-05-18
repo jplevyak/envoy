@@ -94,10 +94,10 @@ public:
   _REGISTER_HOST_FUNCTION(WasmCallback7Int);
   _REGISTER_HOST_FUNCTION(WasmCallback8Int);
   _REGISTER_HOST_FUNCTION(WasmCallback9Int);
-  _REGISTER_HOST_FUNCTION(WasmCallback_Zjl);
-  _REGISTER_HOST_FUNCTION(WasmCallback_Zjm);
-  _REGISTER_HOST_FUNCTION(WasmCallback_mj);
-  _REGISTER_HOST_FUNCTION(WasmCallback_mjj);
+  _REGISTER_HOST_FUNCTION(WasmCallback_ZWl);
+  _REGISTER_HOST_FUNCTION(WasmCallback_ZWm);
+  _REGISTER_HOST_FUNCTION(WasmCallback_m);
+  _REGISTER_HOST_FUNCTION(WasmCallback_mW);
 #undef _REGISTER_HOST_FUNCTION
 
 #define _GET_MODULE_FUNCTION(_type)                                                                \

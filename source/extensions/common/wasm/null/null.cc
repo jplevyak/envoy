@@ -96,10 +96,10 @@ struct NullVm : public WasmVm {
   _REGISTER_CALLBACK(WasmCallback7Int);
   _REGISTER_CALLBACK(WasmCallback8Int);
   _REGISTER_CALLBACK(WasmCallback9Int);
-  _REGISTER_CALLBACK(WasmCallback_Zjl);
-  _REGISTER_CALLBACK(WasmCallback_Zjm);
-  _REGISTER_CALLBACK(WasmCallback_mjj);
-  _REGISTER_CALLBACK(WasmCallback_mj);
+  _REGISTER_CALLBACK(WasmCallback_ZWl);
+  _REGISTER_CALLBACK(WasmCallback_ZWm);
+  _REGISTER_CALLBACK(WasmCallback_m);
+  _REGISTER_CALLBACK(WasmCallback_mW);
 #undef _REGISTER_CALLBACK
 
   // NullVm does not advertize code as emscripten so this will not get called.

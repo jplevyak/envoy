@@ -424,17 +424,17 @@ Word defineMetricHandler(void* raw_context, Word metric_type, Word name_ptr, Wor
   return context->defineMetric(static_cast<Context::MetricType>(metric_type.u64), name);
 }
 
-void incrementMetricHandler(void* raw_context, uint32_t metric_id, int64_t offset) {
+void incrementMetricHandler(void* raw_context, Word metric_id, int64_t offset) {
   auto context = WASM_CONTEXT(raw_context);
   context->incrementMetric(metric_id, offset);
 }
 
-void recordMetricHandler(void* raw_context, uint32_t metric_id, uint64_t value) {
+void recordMetricHandler(void* raw_context, Word metric_id, uint64_t value) {
   auto context = WASM_CONTEXT(raw_context);
   context->recordMetric(metric_id, value);
 }
 
-uint64_t getMetricHandler(void* raw_context, uint32_t metric_id) {
+uint64_t getMetricHandler(void* raw_context, Word metric_id) {
   auto context = WASM_CONTEXT(raw_context);
   return context->getMetric(metric_id);
 }
