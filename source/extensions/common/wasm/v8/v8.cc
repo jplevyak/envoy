@@ -68,12 +68,6 @@ public:
   };
   _REGISTER_HOST_GLOBAL(double);
   _REGISTER_HOST_GLOBAL(Word);
-#if 0
-  std::unique_ptr<Global<Word>> makeGlobal(absl::string_view moduleName, absl::string_view name,
-                                           Word initialValue) override {
-    return registerHostWordGlobalImpl(moduleName, name, initialValue);
-  };
-#endif
 #undef _REGISTER_HOST_GLOBAL
 
 #define _REGISTER_HOST_FUNCTION(_type)                                                             \
@@ -153,26 +147,6 @@ private:
   absl::flat_hash_map<std::string, wasm::own<wasm::Func*>> host_functions_;
   absl::flat_hash_map<std::string, wasm::own<wasm::Func*>> module_functions_;
   bool module_needs_emscripten_{};
-};
-
-template <typename T> struct V8ProxyForGlobal : Global<T> {
-  V8ProxyForGlobal(wasm::Global* value) : global_(value) {}
-
-  T get() override { return global_->get().get<T>(); };
-  void set(const T& value) override { global_->set(wasm::Val::make(static_cast<T>(value))); };
-
-  wasm::Global* global_;
-};
-
-template <> struct V8ProxyForGlobal<Word> : Global<Word> {
-  V8ProxyForGlobal(wasm::Global* value) : global_(value) {}
-
-  Word get() override { return Word(global_->get().get<uint32_t>()); };
-  void set(const Word& value) override {
-    global_->set(wasm::Val::make(static_cast<uint32_t>(value.u64)));
-  };
-
-  wasm::Global* global_;
 };
 
 // Helper functions.
@@ -256,6 +230,15 @@ template <> constexpr auto convertArgToValKind<int64_t>() { return wasm::I64; };
 template <> constexpr auto convertArgToValKind<uint64_t>() { return wasm::I64; };
 template <> constexpr auto convertArgToValKind<float>() { return wasm::F32; };
 template <> constexpr auto convertArgToValKind<double>() { return wasm::F64; };
+
+template <typename T> struct V8ProxyForGlobal : Global<T> {
+  V8ProxyForGlobal(wasm::Global* value) : global_(value) {}
+
+  T get() override { return global_->get().get<typename ConvertWordTypeToUint32<T>::type>(); };
+  void set(const T& value) override { global_->set(makeVal(static_cast<T>(value))); };
+
+  wasm::Global* global_;
+};
 
 template <typename T, std::size_t... I>
 constexpr auto convertArgsTupleToValTypesImpl(absl::index_sequence<I...>) {
