@@ -8,13 +8,12 @@ load(
 
 envoy_package()
 
- 
 envoy_cc_library(
     name = "intrinsics_hdr",
     hdrs = [
-        "proxy_wasm_intrinsics.h",
         "proxy_wasm_enums.h",
         "proxy_wasm_externs.h",
         "proxy_wasm_impl.h",
+        "proxy_wasm_intrinsics.h",
     ],
 )
