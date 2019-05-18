@@ -66,8 +66,8 @@ public:
                                             _type initialValue) override {                         \
     return registerHostGlobalImpl(moduleName, name, initialValue);                                 \
   };
-  _REGISTER_HOST_GLOBAL(double);
   _REGISTER_HOST_GLOBAL(Word);
+  _REGISTER_HOST_GLOBAL(double);
 #undef _REGISTER_HOST_GLOBAL
 
 #define _REGISTER_HOST_FUNCTION(_type)                                                             \
