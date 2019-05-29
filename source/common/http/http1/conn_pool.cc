@@ -30,6 +30,10 @@ ConnPoolImpl::ConnPoolImpl(Event::Dispatcher& dispatcher, Upstream::HostConstSha
       upstream_ready_timer_(dispatcher_.createTimer([this]() { onUpstreamReady(); })) {}
 
 ConnPoolImpl::~ConnPoolImpl() {
+  while (!delayed_clients_.empty()) {
+    delayed_clients_.front()->codec_client_->close();
+  }
+
   while (!ready_clients_.empty()) {
     ready_clients_.front()->codec_client_->close();
   }
@@ -147,7 +151,12 @@ void ConnPoolImpl::onConnectionEvent(ActiveClient& client, Network::ConnectionEv
     } else if (!client.connect_timer_) {
       // The connect timer is destroyed on connect. The lack of a connect timer means that this
       // client is idle and in the ready pool.
-      removed = client.removeFromList(ready_clients_);
+      if (client.delayed_) {
+        client.delayed_ = false;
+        removed = client.removeFromList(delayed_clients_);
+      } else {
+        removed = client.removeFromList(ready_clients_);
+      }
       check_for_drained = false;
     } else {
       // The only time this happens is if we actually saw a connect failure.
@@ -220,6 +229,11 @@ void ConnPoolImpl::onResponseComplete(ActiveClient& client) {
 
 void ConnPoolImpl::onUpstreamReady() {
   upstream_ready_enabled_ = false;
+  while (!delayed_clients_.empty()) {
+    ActiveClient& client = *delayed_clients_.front();
+    client.delayed_ = false;
+    client.moveBetweenLists(delayed_clients_, ready_clients_);
+  }
   while (!pending_requests_.empty() && !ready_clients_.empty()) {
     ActiveClient& client = *ready_clients_.front();
     ENVOY_CONN_LOG(debug, "attaching to next request", *client.codec_client_);
@@ -234,7 +248,11 @@ void ConnPoolImpl::onUpstreamReady() {
 
 void ConnPoolImpl::processIdleClient(ActiveClient& client, bool delay) {
   client.stream_wrapper_.reset();
-  if (pending_requests_.empty() || delay) {
+  if (delay) {
+    ENVOY_CONN_LOG(debug, "moving to delay", *client.codec_client_);
+    client.delayed_ = true;
+    client.moveBetweenLists(busy_clients_, delayed_clients_);
+  } else if (pending_requests_.empty()) {
     // There is nothing to service or delayed processing is requested, so just move the connection
     // into the ready list.
     ENVOY_CONN_LOG(debug, "moving to ready", *client.codec_client_);
