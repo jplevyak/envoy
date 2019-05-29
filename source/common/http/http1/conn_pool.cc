@@ -152,7 +152,7 @@ void ConnPoolImpl::onConnectionEvent(ActiveClient& client, Network::ConnectionEv
       // The connect timer is destroyed on connect. The lack of a connect timer means that this
       // client is idle and in the ready pool.
       if (client.delayed_) {
-        client.delayed_ = false;
+        client.delayed_ = 0;
         removed = client.removeFromList(delayed_clients_);
       } else {
         removed = client.removeFromList(ready_clients_);
@@ -229,10 +229,15 @@ void ConnPoolImpl::onResponseComplete(ActiveClient& client) {
 
 void ConnPoolImpl::onUpstreamReady() {
   upstream_ready_enabled_ = false;
-  while (!delayed_clients_.empty()) {
-    ActiveClient& client = *delayed_clients_.front();
-    client.delayed_ = false;
-    client.moveBetweenLists(delayed_clients_, ready_clients_);
+  auto it = delayed_clients_.begin();
+  while (it != delayed_clients_.end()) {
+    ActiveClient& client = **it;
+    it++;
+    client.delayed_--;
+    if (client.delayed_ == 0) {
+      ENVOY_CONN_LOG(debug, "moving from delay to ready", *client.codec_client_);
+      client.moveBetweenLists(delayed_clients_, ready_clients_);
+    }
   }
   while (!pending_requests_.empty() && !ready_clients_.empty()) {
     ActiveClient& client = *ready_clients_.front();
@@ -250,7 +255,7 @@ void ConnPoolImpl::processIdleClient(ActiveClient& client, bool delay) {
   client.stream_wrapper_.reset();
   if (delay) {
     ENVOY_CONN_LOG(debug, "moving to delay", *client.codec_client_);
-    client.delayed_ = true;
+    client.delayed_ = 2;
     client.moveBetweenLists(busy_clients_, delayed_clients_);
   } else if (pending_requests_.empty()) {
     // There is nothing to service or delayed processing is requested, so just move the connection
@@ -266,7 +271,7 @@ void ConnPoolImpl::processIdleClient(ActiveClient& client, bool delay) {
     pending_requests_.pop_back();
   }
 
-  if (delay && !pending_requests_.empty() && !upstream_ready_enabled_) {
+  if (!delayed_clients_.empty() && !upstream_ready_enabled_) {
     upstream_ready_enabled_ = true;
     upstream_ready_timer_->enableTimer(std::chrono::milliseconds(0));
   }
