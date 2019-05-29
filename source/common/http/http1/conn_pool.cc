@@ -4,6 +4,9 @@
 #include <list>
 #include <memory>
 
+#define _GUN_SOURCE
+#include <poll.h>
+
 #include "envoy/event/dispatcher.h"
 #include "envoy/event/timer.h"
 #include "envoy/http/header_map.h"
@@ -13,6 +16,7 @@
 #include "common/http/codec_client.h"
 #include "common/http/codes.h"
 #include "common/http/headers.h"
+#include "common/network/connection_impl.h"
 #include "common/network/utility.h"
 #include "common/upstream/upstream_impl.h"
 
@@ -92,7 +96,21 @@ void ConnPoolImpl::createNewConnection() {
 
 ConnectionPool::Cancellable* ConnPoolImpl::newStream(StreamDecoder& response_decoder,
                                                      ConnectionPool::Callbacks& callbacks) {
-  if (!ready_clients_.empty()) {
+  while (!ready_clients_.empty()) {
+    Network::ClientConnectionImpl* client_connection = dynamic_cast<Network::ClientConnectionImpl*>(
+        ready_clients_.front()->codec_client_->connection());
+    if (client_connection) {
+      struct pollfd pfd;
+      pfd.fd = client_connection->ioHandle().fd();
+      pfd.events = POLLIN | POLLOUT | POLLRDHUP;
+      pfd.revents = 0;
+      int result = ::poll(&pfd, 1, 0);
+      if (result != 1 || (pfd.revents & (POLLRDHUP | POLLERR | POLLHUP | POLLNVAL))) {
+        ENVOY_LOG(debug, "connection down {}", pfd.revents);
+        ready_clients_.front()->codec_client_->close();
+        continue;
+      }
+    }
     ready_clients_.front()->moveBetweenLists(ready_clients_, busy_clients_);
     ENVOY_CONN_LOG(debug, "using existing connection", *busy_clients_.front()->codec_client_);
     attachRequestToClient(*busy_clients_.front(), response_decoder, callbacks);

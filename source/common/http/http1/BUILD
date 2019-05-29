@@ -54,6 +54,7 @@ envoy_cc_library(
         "//source/common/http:codes_lib",
         "//source/common/http:conn_pool_base_lib",
         "//source/common/http:headers_lib",
+        "//source/common/network:connection_lib",
         "//source/common/network:utility_lib",
         "//source/common/upstream:upstream_lib",
     ],

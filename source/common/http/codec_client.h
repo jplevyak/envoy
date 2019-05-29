@@ -111,6 +111,8 @@ public:
 
   bool remoteClosed() const { return remote_closed_; }
 
+  Network::ClientConnection* connection() { return connection_.get(); };
+
   Type type() const { return type_; }
 
 protected:
