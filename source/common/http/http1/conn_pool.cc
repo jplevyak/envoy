@@ -280,8 +280,7 @@ void ConnPoolImpl::StreamWrapper::decodeHeaders(HeaderMapPtr&& headers, bool end
                                Headers::get().ConnectionValues.Close)) {
       saw_close_header_ = true;
       parent_.parent_.host_->cluster().stats().upstream_cx_close_notify_.inc();
-    }
-    if (absl::EqualsIgnoreCase(headers->Connection()->value().getStringView(),
+    } else if (absl::EqualsIgnoreCase(headers->Connection()->value().getStringView(),
                                Headers::get().ConnectionValues.KeepAlive)) {
       saw_keep_alive_header_ = true;
     }

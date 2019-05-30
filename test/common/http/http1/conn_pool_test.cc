@@ -188,8 +188,8 @@ struct ActiveTestRequest {
 
   void completeKeepAliveResponse(bool with_body) {
     // Test additional metric writes also.
-    Http::HeaderMapPtr response_headers(
-        new TestHeaderMapImpl{{"connection", "keep-alive"}, {":status", "200"}, {"x-envoy-upstream-canary", "true"}});
+    Http::HeaderMapPtr response_headers(new TestHeaderMapImpl{
+        {"connection", "keep-alive"}, {":status", "200"}, {"x-envoy-upstream-canary", "true"}});
 
     inner_decoder_->decodeHeaders(std::move(response_headers), !with_body);
     if (with_body) {
@@ -482,7 +482,8 @@ TEST_F(Http1ConnPoolImplTest, MaxConnections) {
   EXPECT_CALL(callbacks2.pool_ready_, ready());
 
   callbacks.outer_encoder_->encodeHeaders(TestHeaderMapImpl{}, true);
-  Http::HeaderMapPtr response_headers(new TestHeaderMapImpl{{":status", "200"}, {"connection", "keep-alive"}});
+  Http::HeaderMapPtr response_headers(
+      new TestHeaderMapImpl{{":status", "200"}, {"connection", "keep-alive"}});
   inner_decoder->decodeHeaders(std::move(response_headers), true);
 
   conn_pool_.expectAndRunUpstreamReady();
@@ -532,7 +533,8 @@ TEST_F(Http1ConnPoolImplTest, ConnectionCloseWithoutHeader) {
   conn_pool_.expectEnableUpstreamReady();
 
   callbacks.outer_encoder_->encodeHeaders(TestHeaderMapImpl{}, true);
-  Http::HeaderMapPtr response_headers(new TestHeaderMapImpl{{":status", "200"}, {"connection", "keep-alive"}});
+  Http::HeaderMapPtr response_headers(
+      new TestHeaderMapImpl{{":status", "200"}, {"connection", "keep-alive"}});
   inner_decoder->decodeHeaders(std::move(response_headers), true);
 
   // Cause the connection to go away.
@@ -623,7 +625,6 @@ TEST_F(Http1ConnPoolImplTest, NoConnectionKeepAlive) {
   EXPECT_EQ(0U, cluster_->stats_.upstream_cx_destroy_with_active_rq_.value());
 }
 
-
 /**
  * Test when we reach max requests per connection.
  */
@@ -651,7 +652,8 @@ TEST_F(Http1ConnPoolImplTest, MaxRequestsPerConnection) {
 
   // Response with 'connection: close' which should cause the connection to go away.
   EXPECT_CALL(conn_pool_, onClientDestroy());
-  Http::HeaderMapPtr response_headers(new TestHeaderMapImpl{{":status", "200"}, {"connection", "keep-alive"}});
+  Http::HeaderMapPtr response_headers(
+      new TestHeaderMapImpl{{":status", "200"}, {"connection", "keep-alive"}});
   inner_decoder->decodeHeaders(std::move(response_headers), true);
   dispatcher_.clearDeferredDeleteList();
 
