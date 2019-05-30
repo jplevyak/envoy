@@ -203,7 +203,7 @@ void ConnPoolImpl::onResponseComplete(ActiveClient& client) {
   if (!client.stream_wrapper_->encode_complete_) {
     ENVOY_CONN_LOG(debug, "response before request complete", *client.codec_client_);
     onDownstreamReset(client);
-  } else if (client.stream_wrapper_->saw_close_header_ || client.codec_client_->remoteClosed()) {
+  } else if (client.stream_wrapper_->saw_close_header_ || client.codec_client_->remoteClosed() || client.codec_client_->protocol() == Protocol::Http10) {
     ENVOY_CONN_LOG(debug, "saw upstream connection: close", *client.codec_client_);
     onDownstreamReset(client);
   } else if (client.remaining_requests_ > 0 && --client.remaining_requests_ == 0) {
