@@ -232,7 +232,7 @@ void ConnPoolImpl::onUpstreamReady() {
   auto it = delayed_clients_.begin();
   while (it != delayed_clients_.end()) {
     ActiveClient& client = **it;
-    it++;
+    it++;  // Move forward before moveBetweenLists which would invalidate 'it'.
     client.delayed_--;
     if (client.delayed_ == 0) {
       ENVOY_CONN_LOG(debug, "moving from delay to ready", *client.codec_client_);
@@ -255,6 +255,8 @@ void ConnPoolImpl::processIdleClient(ActiveClient& client, bool delay) {
   client.stream_wrapper_.reset();
   if (delay) {
     ENVOY_CONN_LOG(debug, "moving to delay", *client.codec_client_);
+    // N.B. libevent does not guarantee ordering of events, so to ensure that the delayed client
+    // experiences a poll cycle before being made ready, delay for 2 event loops.
     client.delayed_ = 2;
     client.moveBetweenLists(busy_clients_, delayed_clients_);
   } else if (pending_requests_.empty()) {
