@@ -204,7 +204,8 @@ void ConnPoolImpl::onResponseComplete(ActiveClient& client) {
     ENVOY_CONN_LOG(debug, "response before request complete", *client.codec_client_);
     onDownstreamReset(client);
   } else if (client.stream_wrapper_->saw_close_header_ || client.codec_client_->remoteClosed() ||
-             client.codec_client_->protocol() == Protocol::Http10) {
+             (client.codec_client_->protocol() == Protocol::Http10 &&
+              !client.stream_wrapper_->saw_keep_alive_header_)) {
     ENVOY_CONN_LOG(debug, "saw upstream connection: close", *client.codec_client_);
     onDownstreamReset(client);
   } else if (client.remaining_requests_ > 0 && --client.remaining_requests_ == 0) {
@@ -274,11 +275,16 @@ ConnPoolImpl::StreamWrapper::~StreamWrapper() {
 void ConnPoolImpl::StreamWrapper::onEncodeComplete() { encode_complete_ = true; }
 
 void ConnPoolImpl::StreamWrapper::decodeHeaders(HeaderMapPtr&& headers, bool end_stream) {
-  if (headers->Connection() &&
-      absl::EqualsIgnoreCase(headers->Connection()->value().getStringView(),
-                             Headers::get().ConnectionValues.Close)) {
-    saw_close_header_ = true;
-    parent_.parent_.host_->cluster().stats().upstream_cx_close_notify_.inc();
+  if (headers->Connection()) {
+    if (absl::EqualsIgnoreCase(headers->Connection()->value().getStringView(),
+                               Headers::get().ConnectionValues.Close)) {
+      saw_close_header_ = true;
+      parent_.parent_.host_->cluster().stats().upstream_cx_close_notify_.inc();
+    }
+    if (absl::EqualsIgnoreCase(headers->Connection()->value().getStringView(),
+                               Headers::get().ConnectionValues.KeepAlive)) {
+      saw_keep_alive_header_ = true;
+    }
   }
 
   StreamDecoderWrapper::decodeHeaders(std::move(headers), end_stream);
