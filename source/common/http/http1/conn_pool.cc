@@ -232,7 +232,7 @@ void ConnPoolImpl::onUpstreamReady() {
   auto it = delayed_clients_.begin();
   while (it != delayed_clients_.end()) {
     ActiveClient& client = **it;
-    it++;  // Move forward before moveBetweenLists which would invalidate 'it'.
+    it++; // Move forward before moveBetweenLists which would invalidate 'it'.
     client.delayed_--;
     if (client.delayed_ == 0) {
       ENVOY_CONN_LOG(debug, "moving from delay to ready", *client.codec_client_);
