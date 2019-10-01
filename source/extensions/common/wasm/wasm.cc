@@ -49,6 +49,8 @@ namespace Wasm {
 
 namespace {
 
+thread_local std::shared_ptr<Stats::StatNameSet> stat_name_set_;
+
 inline Word wasmResultToWord(WasmResult r) { return Word(static_cast<uint64_t>(r)); }
 
 inline uint32_t convertWordToUint32(Word w) { return static_cast<uint32_t>(w.u64); }
@@ -2094,7 +2096,7 @@ void Context::onGrpcReceiveTrailingMetadata(uint32_t token, Http::HeaderMapPtr&&
 }
 
 WasmResult Context::defineMetric(MetricType type, absl::string_view name, uint32_t* metric_id_ptr) {
-  auto stat_name = wasm_->stat_name_set_.getStatName(name);
+  auto stat_name = stat_name_set_->getStatName(name);
   if (type == MetricType::Counter) {
     auto id = wasm_->nextCounterMetricId();
     auto c = &wasm_->scope_.counterFromStatName(stat_name);
@@ -2198,7 +2200,10 @@ Wasm::Wasm(absl::string_view vm, absl::string_view id, absl::string_view vm_conf
     : cluster_manager_(cluster_manager), dispatcher_(dispatcher), scope_(scope),
       direction_(direction), local_info_(local_info), listener_metadata_(listener_metadata),
       owned_scope_(owned_scope), time_source_(dispatcher.timeSource()),
-      vm_configuration_(vm_configuration), stat_name_set_(scope_.symbolTable()) {
+      vm_configuration_(vm_configuration) {
+  if (!stat_name_set_) {
+    stat_name_set_ = std::make_shared<Stats::StatNameSet>(scope_.symbolTable());
+  }
   wasm_vm_ = Common::Wasm::createWasmVm(vm);
   id_ = std::string(id);
 }
@@ -2380,8 +2385,10 @@ Wasm::Wasm(const Wasm& wasm, Event::Dispatcher& dispatcher)
     : std::enable_shared_from_this<Wasm>(wasm), cluster_manager_(wasm.cluster_manager_),
       dispatcher_(dispatcher), scope_(wasm.scope_), direction_(wasm.direction_),
       local_info_(wasm.local_info_), listener_metadata_(wasm.listener_metadata_), id_(wasm.id_),
-      owned_scope_(wasm.owned_scope_), time_source_(dispatcher.timeSource()),
-      stat_name_set_(scope_.symbolTable()) {
+      owned_scope_(wasm.owned_scope_), time_source_(dispatcher.timeSource()) {
+  if (!stat_name_set_) {
+    stat_name_set_ = std::make_shared<Stats::StatNameSet>(scope_.symbolTable());
+  }
   wasm_vm_ = wasm.wasmVm()->clone();
   vm_context_ = std::make_shared<Context>(this);
   getFunctions();
