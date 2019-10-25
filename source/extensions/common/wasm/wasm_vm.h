@@ -39,6 +39,10 @@ template <typename R, typename... Args> struct ConvertFunctionTypeWordToUint32<R
   using type = typename ConvertWordTypeToUint32<R>::type (*)(
       typename ConvertWordTypeToUint32<Args>::type...);
 };
+template <typename... Args> struct ConvertFunctionTypeWordToUint32<void (*)(Args...)> {
+  using type = typename ConvertWordTypeToUint32<void>::type (*)(
+      typename ConvertWordTypeToUint32<Args>::type...);
+};
 
 // A wrapper for a global variable within the VM.
 template <typename T> struct Global {

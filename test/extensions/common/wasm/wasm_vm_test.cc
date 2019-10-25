@@ -105,6 +105,7 @@ public:
 MockHostFunctions* g_host_functions;
 
 void ping(void*) { g_host_functions->ping(); }
+void bad_ping(void*, Word) { return; }
 
 class WasmVmTest : public testing::Test {
 public:
@@ -133,7 +134,7 @@ TEST_F(WasmVmTest, V8Code) {
   EXPECT_TRUE(wasm_vm->getCustomSection("emscripten_metadata").empty());
 }
 
-TEST_F(WasmVmTest, V8MissingHostFunction) {
+TEST_F(WasmVmTest, V8BadHostFunctions) {
   auto wasm_vm = createWasmVm("envoy.wasm.runtime.v8");
   ASSERT_TRUE(wasm_vm != nullptr);
 
@@ -143,6 +144,36 @@ TEST_F(WasmVmTest, V8MissingHostFunction) {
 
   EXPECT_THROW_WITH_MESSAGE(wasm_vm->link("test"), WasmVmException,
                             "Failed to load WASM module due to a missing import: env.ping");
+
+  wasm_vm->registerCallback("env", "ping", &bad_ping,
+                            typename ConvertFunctionTypeWordToUint32<decltype(bad_ping)>::type);
+  EXPECT_THROW_WITH_MESSAGE(wasm_vm->link("test"), WasmVmException,
+                            "Failed to load WASM module due to a missing import: env.ping");
+}
+
+TEST_F(WasmVmTest, V8BadModuleFunctions) {
+  auto wasm_vm = createWasmVm("envoy.wasm.runtime.v8");
+  ASSERT_TRUE(wasm_vm != nullptr);
+
+  auto code = TestEnvironment::readFileToStringForTest(TestEnvironment::substitute(
+      "{{ test_rundir }}/test/extensions/common/wasm/test_data/test_rust.wasm"));
+  EXPECT_TRUE(wasm_vm->load(code, false));
+
+  wasm_vm->registerCallback("env", "ping", ping, &ping);
+  wasm_vm->link("test");
+
+  WasmCallVoid<0> func_noargs_noreturn;
+  WasmCallWord<0> func_noargs_return;
+
+  wasm_vm->getFunction("nonexistent", &func_noargs_noreturn);
+  EXPECT_TRUE(func_noargs_noreturn == nullptr);
+  wasm_vm->getFunction("nonexistent", &func_noargs_return);
+  EXPECT_TRUE(func_noargs_return == nullptr);
+
+  EXPECT_THROW_WITH_MESSAGE(wasm_vm->getFunction("sum", &func_noargs_noreturn), WasmVmException,
+                            "Bad function signature for: sum");
+  EXPECT_THROW_WITH_MESSAGE(wasm_vm->getFunction("sum", &func_noargs_return), WasmVmException,
+                            "Bad function signature for: sum");
 }
 
 TEST_F(WasmVmTest, V8FunctionCalls) {
