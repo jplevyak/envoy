@@ -145,10 +145,12 @@ TEST_F(WasmVmTest, V8BadHostFunctions) {
   EXPECT_THROW_WITH_MESSAGE(wasm_vm->link("test"), WasmVmException,
                             "Failed to load WASM module due to a missing import: env.ping");
 
-  wasm_vm->registerCallback("env", "ping", &bad_ping,
-                            typename ConvertFunctionTypeWordToUint32<decltype(bad_ping)>::type);
+  wasm_vm->registerCallback(
+      "env", "ping", &bad_ping,
+      &ConvertFunctionWordToUint32<decltype(bad_ping), bad_ping>::convertFunctionWordToUint32);
   EXPECT_THROW_WITH_MESSAGE(wasm_vm->link("test"), WasmVmException,
-                            "Failed to load WASM module due to a missing import: env.ping");
+                            "Failed to load WASM module due to an import type mismatch: env.ping, "
+                            "want: void -> void, but host exports: i32 -> void");
 }
 
 TEST_F(WasmVmTest, V8BadModuleFunctions) {
