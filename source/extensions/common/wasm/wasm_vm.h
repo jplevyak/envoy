@@ -63,6 +63,9 @@ struct ConvertFunctionWordToUint32<void(Args...), F> {
   }
 };
 
+#define WORD_FUNCTION_TO_UIN32(_f)                                                                 \
+  &ConvertFunctionWordToUint32<decltype(_f), _f>::convertFunctionWordToUint32
+
 // A wrapper for a global variable within the VM.
 template <typename T> struct Global {
   virtual ~Global() = default;
