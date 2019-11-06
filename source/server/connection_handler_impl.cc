@@ -161,6 +161,7 @@ ConnectionHandlerImpl::findActiveListenerByAddress(const Network::Address::Insta
 void ConnectionHandlerImpl::ActiveSocket::onTimeout() {
   listener_.stats_.downstream_pre_cx_timeout_.inc();
   ASSERT(inserted());
+  accept_filters_.clear();
   if (listener_.continue_on_listener_filters_timeout_) {
     newConnection();
   }
