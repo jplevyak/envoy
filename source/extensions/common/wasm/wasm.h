@@ -285,6 +285,8 @@ private:
 };
 using WasmHandleSharedPtr = std::shared_ptr<WasmHandle>;
 
+std::string Sha256(absl::string_view data);
+
 using CreateWasmCallback = std::function<void(WasmHandleSharedPtr)>;
 
 // Create a high level Wasm VM with Envoy API support. Note: 'id' may be empty if this VM will not
