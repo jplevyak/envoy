@@ -19,6 +19,12 @@ using testing::Eq;
 using testing::Return;
 
 namespace Envoy {
+namespace Http {
+using RequestMessagePtr = MessagePtr;
+using ResponseMessagePtr = MessagePtr;
+using ResponseHeaderMapPtr = std::unique_ptr<HeaderMap>;
+using TestResponseHeaderMapImpl = TestHeaderMapImpl;
+} // namespace Http
 namespace Extensions {
 namespace Common {
 namespace Wasm {
