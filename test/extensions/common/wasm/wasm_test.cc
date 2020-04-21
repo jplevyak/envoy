@@ -1,4 +1,5 @@
 #include <stdio.h>
+
 #include "envoy/server/lifecycle_notifier.h"
 
 #include "common/common/hex.h"
