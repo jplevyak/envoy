@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <deque>
+#include <chrono>
 #include <map>
 #include <memory>
 
@@ -448,6 +449,7 @@ template <typename T> inline bool Wasm::setDatatype(uint64_t ptr, const T& t) {
 }
 
 void clearCodeCacheForTesting(bool fail_if_not_cached);
+void setTimeOffsetForCodeCacheForTesting(MonotonicTime::duration d);
 
 } // namespace Wasm
 } // namespace Common
