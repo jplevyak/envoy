@@ -10,8 +10,8 @@
 #include "envoy/common/exception.h"
 #include "envoy/config/wasm/v3/wasm.pb.validate.h"
 #include "envoy/http/filter.h"
-#include "envoy/server/wasm.h"
 #include "envoy/server/lifecycle_notifier.h"
+#include "envoy/server/wasm.h"
 #include "envoy/stats/scope.h"
 #include "envoy/stats/stats.h"
 #include "envoy/thread_local/thread_local.h"
@@ -446,6 +446,8 @@ inline bool Wasm::copyToPointerSize(const Buffer::Instance& buffer, uint64_t sta
 template <typename T> inline bool Wasm::setDatatype(uint64_t ptr, const T& t) {
   return wasm_vm_->setMemory(ptr, sizeof(T), &t);
 }
+
+void clearCodeCacheForTesting(bool fail_if_not_cached);
 
 } // namespace Wasm
 } // namespace Common
