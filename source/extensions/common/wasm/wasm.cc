@@ -654,10 +654,10 @@ createWasmInternal(const VmConfig& vm_config, PluginSharedPtr plugin, Stats::Sco
             }
             if (!root_context) {
               wasm->wasm()->start(plugin);
+              wasm->wasm()->clearRootContexts();
             } else {
               wasm->wasm()->startForTesting(std::move(root_context), plugin);
             }
-            wasm->wasm()->clearRootContexts();
             (*base_wasms_)[vm_key] = wasm;
           }
           cb(std::move(wasm));
