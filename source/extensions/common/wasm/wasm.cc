@@ -616,14 +616,14 @@ createWasmInternal(const VmConfig& vm_config, PluginSharedPtr plugin, Stats::Sco
     if (!code_cache) {
       code_cache = new std::remove_reference<decltype(*code_cache)>::type;
     }
-    if (!create_wasm_stats) {
+    Stats::ScopeSharedPtr create_wasm_stats_scope;
+    if (!create_wasm_stats || !(create_wasm_stats_scope = create_wasm_stats->scope_.lock())) {
+      if (create_wasm_stats) {
+        delete create_wasm_stats;
+      }
       create_wasm_stats =
           new CreateWasmStats{scope, CREATE_WASM_STATS(POOL_COUNTER_PREFIX(*scope, "wasm."),
                                                        POOL_GAUGE_PREFIX(*scope, "wasm."))};
-    }
-    Stats::ScopeSharedPtr create_wasm_stats_scope = create_wasm_stats->scope_.lock();
-    if (!create_wasm_stats_scope) {
-      throw WasmException("Stats Scope for Wasm code cache has been deleted");
     }
     // Remove entries older than CODE_CACHE_SECONDS_CACHING_TTL except for our target.
     for (auto it = code_cache->begin(); it != code_cache->end();) {
