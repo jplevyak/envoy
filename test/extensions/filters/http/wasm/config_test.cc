@@ -40,7 +40,7 @@ protected:
     ON_CALL(context_, dispatcher()).WillByDefault(ReturnRef(dispatcher_));
   }
 
-  void SetUp() { Envoy::Extensions::Common::Wasm::clearCodeCacheForTesting(false); }
+  void SetUp() { Envoy::Extensions::Common::Wasm::clearCodeCacheForTesting(); }
 
   void initializeForRemote() {
     retry_timer_ = new Event::MockTimer();
@@ -217,7 +217,6 @@ TEST_P(WasmFilterConfigTest, YamlLoadFromRemoteWasm) {
 }
 
 TEST_P(WasmFilterConfigTest, YamlLoadFromRemoteWasmFailOnUncachedThenSucceed) {
-  Envoy::Extensions::Common::Wasm::clearCodeCacheForTesting(true);
   const std::string code = TestEnvironment::readFileToStringForTest(TestEnvironment::substitute(
       "{{ test_rundir }}/test/extensions/filters/http/wasm/test_data/test_cpp.wasm"));
   const std::string sha256 = Hex::encode(
@@ -225,6 +224,7 @@ TEST_P(WasmFilterConfigTest, YamlLoadFromRemoteWasmFailOnUncachedThenSucceed) {
   const std::string yaml = TestEnvironment::substitute(absl::StrCat(R"EOF(
   config:
     vm_config:
+      nack_on_code_cache_miss: true
       runtime: "envoy.wasm.runtime.)EOF",
                                                                     GetParam(), R"EOF("
       code:
@@ -282,7 +282,6 @@ TEST_P(WasmFilterConfigTest, YamlLoadFromRemoteWasmFailOnUncachedThenSucceed) {
 }
 
 TEST_P(WasmFilterConfigTest, YamlLoadFromRemoteWasmFailCachedThenSucceed) {
-  Envoy::Extensions::Common::Wasm::clearCodeCacheForTesting(true);
   const std::string code = TestEnvironment::readFileToStringForTest(TestEnvironment::substitute(
       "{{ test_rundir }}/test/extensions/filters/http/wasm/test_data/test_cpp.wasm"));
   const std::string sha256 = Hex::encode(
@@ -290,6 +289,7 @@ TEST_P(WasmFilterConfigTest, YamlLoadFromRemoteWasmFailCachedThenSucceed) {
   const std::string yaml = TestEnvironment::substitute(absl::StrCat(R"EOF(
   config:
     vm_config:
+      nack_on_code_cache_miss: true
       runtime: "envoy.wasm.runtime.)EOF",
                                                                     GetParam(), R"EOF("
       code:
@@ -418,8 +418,7 @@ TEST_P(WasmFilterConfigTest, YamlLoadFromRemoteWasmFailCachedThenSucceed) {
 
   EXPECT_CALL(context_, initManager()).WillRepeatedly(ReturnRef(init_manager5));
 
-  EXPECT_THROW_WITH_MESSAGE(factory.createFilterFactoryFromProto(proto_config2, "stats", context_),
-                            WasmException, "Unable to create Wasm HTTP filter ");
+  factory.createFilterFactoryFromProto(proto_config2, "stats", context_);
 
   EXPECT_CALL(init_watcher_, ready());
   context_.initManager().initialize(init_watcher_);
